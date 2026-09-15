@@ -386,12 +386,14 @@ void LayerView::contextMenuEvent(QContextMenuEvent *event)
     if (proxyIndex.isValid()) {
         menu.addMenu(handler->createGroupLayerMenu(&menu));
         menu.addAction(handler->actionDuplicateLayers());
+        menu.addAction(handler->actionCopyLayers());
         menu.addAction(handler->actionMergeLayersDown());
         menu.addAction(handler->actionRemoveLayers());
     }
-    
+
     // independent of whether index is valid but maintaining positioning
     menu.addSeparator();
+    menu.addAction(handler->actionPasteLayers());
     menu.addAction(handler->actionSelectAllLayers());
 
     if (proxyIndex.isValid()) {

@@ -296,7 +296,7 @@ public:
 
     QSize chunkSize() const;
     void setChunkSize(QSize size);
-    
+
     bool isTilesetUsed(const Tileset *tileset) const;
 
     std::unique_ptr<Map> clone() const;

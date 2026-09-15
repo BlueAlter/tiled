@@ -60,6 +60,7 @@
 #include "shapefilltool.h"
 #include "stampbrush.h"
 #include "templatesdock.h"
+#include "templatelistdock.h"
 #include "tile.h"
 #include "tileselectiontool.h"
 #include "tilesetdock.h"
@@ -145,6 +146,7 @@ MapEditor::MapEditor(QObject *parent)
     , mUndoDock(new UndoDock(mMainWindow))
     , mObjectsDock(new ObjectsDock(mMainWindow))
     , mTemplatesDock(new TemplatesDock(mMainWindow))
+    , mTemplateListDock(new TemplateListDock(mMainWindow))
     , mTilesetDock(new TilesetDock(mMainWindow))
     , mWangDock(new WangDock(mMainWindow))
     , mMiniMapDock(new MiniMapDock(mMainWindow))
@@ -249,6 +251,7 @@ MapEditor::MapEditor(QObject *parent)
     connect(mTilesetDock, &TilesetDock::stampCaptured, this, &MapEditor::setStamp);
     connect(mTilesetDock, &TilesetDock::localFilesDropped, this, &MapEditor::filesDroppedOnTilesetDock);
     connect(mTemplatesDock, &TemplatesDock::currentTemplateChanged, mToolManager, &ToolManager::setObjectTemplate);
+    connect(mTemplateListDock, &TemplateListDock::currentTemplateChanged, mToolManager, &ToolManager::setObjectTemplate);
     connect(DocumentManager::instance(), &DocumentManager::templateOpenRequested,
             mTemplatesDock, &TemplatesDock::openTemplate);
     connect(DocumentManager::instance(), &DocumentManager::selectCustomPropertyRequested,
@@ -481,6 +484,7 @@ QList<QDockWidget *> MapEditor::dockWidgets() const
         mUndoDock,
         mObjectsDock,
         mTemplatesDock,
+        mTemplateListDock,
         mTilesetDock,
         mWangDock,
         mMiniMapDock,
@@ -572,8 +576,10 @@ void MapEditor::resetLayout()
     mMainWindow->addDockWidget(Qt::LeftDockWidgetArea, mUndoDock);
 
     mMainWindow->addDockWidget(Qt::LeftDockWidgetArea, mTemplatesDock);
+    mMainWindow->addDockWidget(Qt::LeftDockWidgetArea, mTemplateListDock);
     mMainWindow->addDockWidget(Qt::LeftDockWidgetArea, mTileStampsDock);
-    mMainWindow->tabifyDockWidget(mTemplatesDock, mTileStampsDock);
+    mMainWindow->tabifyDockWidget(mTemplatesDock, mTemplateListDock);
+    mMainWindow->tabifyDockWidget(mTemplateListDock, mTileStampsDock);
 
     mMainWindow->addDockWidget(Qt::RightDockWidgetArea, mLayerDock);
     mMainWindow->addDockWidget(Qt::RightDockWidgetArea, mObjectsDock);

@@ -63,6 +63,8 @@
 #include "scriptmanager.h"
 #include "sentryhelper.h"
 #include "templatesdock.h"
+#include "entitywindow.h"
+#include "roomdesignerwindow.h"
 #include "tileset.h"
 #include "tilesetdock.h"
 #include "tilesetdocument.h"
@@ -221,6 +223,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     , mUi(new Ui::MainWindow)
     , mActionHandler(new MapDocumentActionHandler(this))
     , mPropertyTypesEditor(new PropertyTypesEditor(this))
+    , mEntityWindow(new EntityWindow(this))
     , mAutomappingManager(new AutomappingManager(this))
     , mDocumentManager(nullptr)
 {
@@ -508,6 +511,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     mLayerMenu->addMenu(mNewLayerMenu);
     mLayerMenu->addMenu(mGroupLayerMenu);
     mLayerMenu->addAction(mActionHandler->actionDuplicateLayers());
+    mLayerMenu->addAction(mActionHandler->actionCopyLayers());
+    mLayerMenu->addAction(mActionHandler->actionPasteLayers());
     mLayerMenu->addAction(mActionHandler->actionMergeLayersDown());
     mLayerMenu->addAction(mActionHandler->actionRemoveLayers());
     mLayerMenu->addSeparator();
@@ -790,12 +795,20 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     mShowPropertyTypesEditor = new QAction(tr("Custom Types Editor"), this);
     mShowPropertyTypesEditor->setCheckable(true);
 
+    mShowEntityWindow = new QAction(tr("Entities"), this);
+    mShowEntityWindow->setCheckable(true);
+
+
     ActionManager::registerAction(mResetToDefaultLayout, "ResetToDefaultLayout");
     ActionManager::registerAction(mLockLayout, "LockLayout");
     ActionManager::registerAction(mShowPropertyTypesEditor, "CustomTypesEditor");
+    ActionManager::registerAction(mShowEntityWindow, "EntityWindow");
+
 
     mUi->menuView->insertAction(mUi->actionSearchActions, mViewsAndToolbarsAction);
     mUi->menuView->insertAction(mUi->actionShowGrid, mShowPropertyTypesEditor);
+    mUi->menuView->insertAction(mUi->actionShowGrid, mShowEntityWindow);
+
     mUi->menuView->insertSeparator(mUi->actionShowGrid);
 
     mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->showAnimationEditor());
@@ -816,6 +829,11 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             mPropertyTypesEditor, &QWidget::setVisible);
     connect(mPropertyTypesEditor, &PropertyTypesEditor::closed,
             this, &MainWindow::onPropertyTypesEditorClosed);
+
+    connect(mShowEntityWindow, &QAction::toggled,
+            mEntityWindow, &QWidget::setVisible);
+    connect(mEntityWindow, &EntityWindow::closed,
+            this, [this] { mShowEntityWindow->setChecked(false); });
 
     connect(ClipboardManager::instance(), &ClipboardManager::hasMapChanged,
             this, &MainWindow::updateActions);

@@ -60,6 +60,7 @@ class MapEditor;
 class MapScene;
 class MapView;
 class PropertyTypesEditor;
+class EntityWindow;
 class ProjectDock;
 class ProjectModel;
 class TilesetDocument;
@@ -245,6 +246,8 @@ private:
     ProjectDock *mProjectDock;
     IssuesDock *mIssuesDock;
     PropertyTypesEditor *mPropertyTypesEditor;
+    EntityWindow *mEntityWindow;
+    RoomDesignerWindow *mRoomDesignerWindow;
     QPointer<LocatorWidget> mLocatorWidget;
     QPointer<QWidget> mPopupWidget;
     double mPopupWidgetShowProgress = 1.0;
@@ -257,6 +260,8 @@ private:
     QMenu *mViewsAndToolbarsMenu;
     QAction *mViewsAndToolbarsAction;
     QAction *mShowPropertyTypesEditor;
+    QAction *mShowEntityWindow;
+    QAction *mShowRoomDesignerWindow;
     QAction *mResetToDefaultLayout;
     QAction *mLockLayout;
 
