@@ -30,6 +30,7 @@
 #include "documentmanager.h"
 #include "erasetiles.h"
 #include "grouplayer.h"
+#include "layerdefinitioninstantiator.h"
 #include "map.h"
 #include "mapdocument.h"
 #include "mapobject.h"
@@ -900,7 +901,9 @@ void MapDocumentActionHandler::updateActions()
     mActionToggleLockSelectedLayers->setEnabled(!selectedLayers.isEmpty());
     mActionToggleOtherLayers->setEnabled(currentLayer && (hasNextLayer || hasPreviousLayer));
     mActionToggleLockOtherLayers->setEnabled(currentLayer && (hasNextLayer || hasPreviousLayer));
-    mActionRemoveLayers->setEnabled(!selectedLayers.isEmpty());
+    mActionRemoveLayers->setEnabled(!selectedLayers.isEmpty() &&
+                                    std::none_of(selectedLayers.begin(), selectedLayers.end(),
+                                                 [] (Layer *layer) { return LayerDefinitionInstantiator::isLayerProtected(layer); }));
     mActionLayerProperties->setEnabled(currentLayer);
 
     mActionDuplicateObjects->setEnabled(selectedObjectsCount > 0);

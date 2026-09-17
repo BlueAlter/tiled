@@ -36,6 +36,7 @@
 #include "commandmanager.h"
 #include "consoledock.h"
 #include "documentmanager.h"
+#include "layerdefinitionseditor.h"
 #include "donationpopup.h"
 #include "exportasimagedialog.h"
 #include "exporthelper.h"
@@ -221,6 +222,9 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     , mUi(new Ui::MainWindow)
     , mActionHandler(new MapDocumentActionHandler(this))
     , mPropertyTypesEditor(new PropertyTypesEditor(this))
+
+    , mLayerDefinitionsEditor(new LayerDefinitionsEditor(this))
+
     , mAutomappingManager(new AutomappingManager(this))
     , mDocumentManager(nullptr)
 {
@@ -790,12 +794,18 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     mShowPropertyTypesEditor = new QAction(tr("Custom Types Editor"), this);
     mShowPropertyTypesEditor->setCheckable(true);
 
+    mShowLayerDefinitionsEditor = new QAction(tr("Project Layers"), this);
+    mShowLayerDefinitionsEditor->setCheckable(true);
+
     ActionManager::registerAction(mResetToDefaultLayout, "ResetToDefaultLayout");
     ActionManager::registerAction(mLockLayout, "LockLayout");
     ActionManager::registerAction(mShowPropertyTypesEditor, "CustomTypesEditor");
+    ActionManager::registerAction(mShowLayerDefinitionsEditor, "ProjectLayersEditor");
 
     mUi->menuView->insertAction(mUi->actionSearchActions, mViewsAndToolbarsAction);
     mUi->menuView->insertAction(mUi->actionShowGrid, mShowPropertyTypesEditor);
+    menuBar()->addAction(mShowLayerDefinitionsEditor);
+
     mUi->menuView->insertSeparator(mUi->actionShowGrid);
 
     mUi->menuTileset->insertAction(mUi->actionTilesetProperties, mTilesetEditor->showAnimationEditor());
@@ -816,6 +826,11 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             mPropertyTypesEditor, &QWidget::setVisible);
     connect(mPropertyTypesEditor, &PropertyTypesEditor::closed,
             this, &MainWindow::onPropertyTypesEditorClosed);
+
+    connect(mShowLayerDefinitionsEditor, &QAction::toggled,
+            mLayerDefinitionsEditor, &QWidget::setVisible);
+    connect(mLayerDefinitionsEditor, &LayerDefinitionsEditor::closed,
+            this, &MainWindow::onLayerDefinitionsEditorClosed);
 
     connect(ClipboardManager::instance(), &ClipboardManager::hasMapChanged,
             this, &MainWindow::updateActions);
@@ -2071,6 +2086,11 @@ void MainWindow::onPropertyTypesEditorClosed()
     mShowPropertyTypesEditor->setChecked(false);
 }
 
+void MainWindow::onLayerDefinitionsEditorClosed()
+{
+    mShowLayerDefinitionsEditor->setChecked(false);
+}
+
 void MainWindow::ensureHasBorderInFullScreen()
 {
 #ifdef Q_OS_WIN
@@ -2271,6 +2291,7 @@ void MainWindow::updateActions()
     mUi->actionRefreshProjectFolders->setEnabled(projectHasFolders);
     mUi->actionProjectProperties->setEnabled(hasProject);
     mShowPropertyTypesEditor->setEnabled(hasProject);
+    mShowLayerDefinitionsEditor->setEnabled(hasProject);
 }
 
 void MainWindow::updateZoomable()

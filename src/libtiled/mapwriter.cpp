@@ -643,6 +643,8 @@ void MapWriterPrivate::writeLayerAttributes(QXmlStreamWriter &w,
         w.writeAttribute(QStringLiteral("name"), layer.name());
     if (!layer.className().isEmpty())
         w.writeAttribute(QStringLiteral("class"), layer.className());
+    if (!layer.definitionId().isEmpty())
+        w.writeAttribute(QStringLiteral("definitionid"), layer.definitionId());
 
     const int x = layer.x();
     const int y = layer.y();

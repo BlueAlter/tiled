@@ -21,6 +21,7 @@
 #pragma once
 
 #include "command.h"
+#include "layerdefinition.h"
 #include "object.h"
 #include "tiled.h"
 #include "tilededitor_global.h"
@@ -51,6 +52,21 @@ public:
     const QDateTime &lastSaved() const;
     const SharedPropertyTypes &propertyTypes() const;
 
+    LayerDefinitions &layerDefinitions() { return mLayerDefinitions; }
+    const LayerDefinitions &layerDefinitions() const { return mLayerDefinitions; }
+
+    /**
+     * Global registry of tags available for use by LayerDefinitions (and,
+     * later, other things like tilesets). Keeping this centralized means
+     * a tag typed in one place is reliably the same tag used elsewhere,
+     * and renaming/removing it here updates everything that refers to it.
+     */
+    const QStringList &tags() const { return mTags; }
+    bool addTag(const QString &tag);
+    bool renameTag(const QString &oldName, const QString &newName);
+    void removeTag(const QString &tag);
+    int tagUsageCount(const QString &tag) const;
+
     QString mExtensionsPath;
     QString mObjectTypesFile;
     QString mAutomappingRulesFile;
@@ -62,6 +78,8 @@ private:
     QString mFileName;
     QStringList mFolders;
     SharedPropertyTypes mPropertyTypes;
+    LayerDefinitions mLayerDefinitions;
+    QStringList mTags;
 };
 
 

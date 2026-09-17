@@ -78,6 +78,8 @@ bool Project::save(const QString &fileName)
     ExportContext context(*mPropertyTypes, dir.path());
     context.setRecursiveBehavior(ExportContext::RecursiveBehavior::TypedListValues);
     const QJsonArray projectProperties = propertiesToJson(properties(), context);
+    const QJsonArray layerDefinitions = mLayerDefinitions.toJson(context);
+    const QJsonArray tags = QJsonArray::fromStringList(mTags);
     QJsonObject project {
         { QStringLiteral("propertyTypes"), propertyTypes },
         { QStringLiteral("folders"), folders },
@@ -85,6 +87,8 @@ bool Project::save(const QString &fileName)
         { QStringLiteral("automappingRulesFile"), dir.relativeFilePath(mAutomappingRulesFile) },
         { QStringLiteral("commands"), commands },
         { QStringLiteral("properties"),  projectProperties },
+        { QStringLiteral("layerDefinitions"), layerDefinitions },
+        { QStringLiteral("tags"), tags },
     };
 
     if (mCompatibilityVersion != Tiled_Latest)
@@ -138,6 +142,15 @@ std::unique_ptr<Project> Project::load(const QString &fileName)
         project->setProperties(loadedProperties);
     }
 
+    if (projectJson.contains(QLatin1String("layerDefinitions"))) {
+        ExportContext context(*project->mPropertyTypes, dir.path());
+        context.setRecursiveBehavior(ExportContext::RecursiveBehavior::TypedListValues);
+        project->mLayerDefinitions.loadFromJson(projectJson.value(QLatin1String("layerDefinitions")).toArray(), context);
+    }
+
+    for (const QJsonValue &value : projectJson.value(QLatin1String("tags")).toArray())
+        project->mTags.append(value.toString());
+
     const QJsonArray folders = projectJson.value(QLatin1String("folders")).toArray();
     for (const QJsonValue &folderValue : folders)
         project->mFolders.append(QDir::cleanPath(dir.absoluteFilePath(folderValue.toString())));
@@ -160,6 +173,69 @@ void Project::removeFolder(int index)
 {
     Q_ASSERT(index >= 0 && index < mFolders.size());
     mFolders.removeAt(index);
+}
+
+bool Project::addTag(const QString &tag)
+{
+    const QString trimmed = tag.trimmed();
+    if (trimmed.isEmpty() || mTags.contains(trimmed))
+        return false;
+
+    mTags.append(trimmed);
+    return true;
+}
+
+bool Project::renameTag(const QString &oldName, const QString &newName)
+{
+    const QString trimmed = newName.trimmed();
+    if (trimmed.isEmpty() || oldName == trimmed)
+        return false;
+
+    const int index = mTags.indexOf(oldName);
+    if (index < 0)
+        return false;
+
+    // Don't allow renaming onto an already-existing tag; that would
+    // silently merge two tags together, which the user should do
+    // explicitly (remove the duplicate first) rather than by accident.
+    if (mTags.contains(trimmed))
+        return false;
+
+    mTags[index] = trimmed;
+
+    for (int i = 0; i < mLayerDefinitions.count(); ++i) {
+        LayerDefinition *definition = mLayerDefinitions.at(i);
+        const int tagIndex = definition->tags.indexOf(oldName);
+        if (tagIndex < 0)
+            continue;
+
+        // Guard against a layer somehow already having both names
+        // assigned (shouldn't normally happen, but would otherwise
+        // produce a duplicate in that one definition's tag list).
+        if (definition->tags.contains(trimmed))
+            definition->tags.removeAt(tagIndex);
+        else
+            definition->tags[tagIndex] = trimmed;
+    }
+
+    return true;
+}
+
+void Project::removeTag(const QString &tag)
+{
+    mTags.removeAll(tag);
+
+    for (int i = 0; i < mLayerDefinitions.count(); ++i)
+        mLayerDefinitions.at(i)->tags.removeAll(tag);
+}
+
+int Project::tagUsageCount(const QString &tag) const
+{
+    int count = 0;
+    for (int i = 0; i < mLayerDefinitions.count(); ++i)
+        if (mLayerDefinitions.at(i)->tags.contains(tag))
+            ++count;
+    return count;
 }
 
 } // namespace Tiled

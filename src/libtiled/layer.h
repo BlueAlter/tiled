@@ -77,9 +77,18 @@ public:
     int id() const { return mId; }
     void setId(int id) { mId = id; }
 
+    /**
+     * If non-empty, this layer is an instance of a project-level
+     * LayerDefinition with this id. Such layers are structurally locked:
+     * they cannot be deleted, renamed away from their definition, or
+     * moved out of their defined place in the hierarchy.
+     */
+    const QString &definitionId() const { return mDefinitionId; }
+    void setDefinitionId(const QString &definitionId) { mDefinitionId = definitionId; }
+    bool isInherited() const { return !mDefinitionId.isEmpty(); }
+
     const QColor &tintColor() const { return mTintColor; }
     void setTintColor(const QColor &tintColor) { mTintColor = tintColor; }
-
     /**
      * Returns the type of this layer.
      */
@@ -263,6 +272,7 @@ protected:
 
     QString mName;
     int mId = 0;
+    QString mDefinitionId;
     TypeFlag mLayerType;
     int mX = 0;
     int mY = 0;

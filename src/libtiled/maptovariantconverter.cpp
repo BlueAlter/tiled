@@ -781,6 +781,8 @@ void MapToVariantConverter::addLayerAttributes(QVariantMap &layerVariant,
     layerVariant[QStringLiteral("name")] = layer.name();
     if (!layer.className().isEmpty())
         layerVariant[QStringLiteral("class")] = layer.className();
+    if (!layer.definitionId().isEmpty())
+        layerVariant[QStringLiteral("definitionid")] = layer.definitionId();
     layerVariant[QStringLiteral("x")] = layer.x();
     layerVariant[QStringLiteral("y")] = layer.y();
     layerVariant[QStringLiteral("visible")] = layer.isVisible();

@@ -20,7 +20,7 @@
  */
 
 #include "documentmanager.h"
-
+#include "layerdefinitioninstantiator.h"
 #include "abstracttool.h"
 #include "adjusttileindexes.h"
 #include "brokenlinks.h"
@@ -562,6 +562,8 @@ int DocumentManager::insertDocument(int index, const DocumentPtr &document)
     if (auto mapDocument = qobject_cast<MapDocument*>(documentPtr)) {
         for (const SharedTileset &tileset : mapDocument->map()->tilesets())
             addToTilesetDocument(tileset, mapDocument);
+
+        LayerDefinitionInstantiator::reconcile(mapDocument, ProjectManager::instance()->project());
     } else if (auto tilesetDocument = qobject_cast<TilesetDocument*>(documentPtr)) {
         // We may have opened a bare tileset that wasn't seen before
         if (!mTilesetDocumentsModel->contains(tilesetDocument)) {
