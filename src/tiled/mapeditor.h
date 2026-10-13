@@ -56,6 +56,7 @@ class ReversingProxyModel;
 class ShapeFillTool;
 class StampBrush;
 class TemplatesDock;
+class TemplateListDock;
 class TileStamp;
 class TileStampManager;
 class TileStampsDock;
@@ -188,6 +189,7 @@ private:
     UndoDock *mUndoDock;
     ObjectsDock *mObjectsDock;
     TemplatesDock *mTemplatesDock;
+    TemplateListDock *mTemplateListDock;
     TilesetDock *mTilesetDock;
     WangDock *mWangDock;
     MiniMapDock* mMiniMapDock;

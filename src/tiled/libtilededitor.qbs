@@ -486,6 +486,8 @@ DynamicLibrary {
         "tabbar.h",
         "templatesdock.cpp",
         "templatesdock.h",
+        "templatelistdock.cpp",
+        "templatelistdock.h",
         "texteditordialog.cpp",
         "texteditordialog.h",
         "texteditordialog.ui",
