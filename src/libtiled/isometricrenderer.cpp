@@ -72,6 +72,9 @@ QRectF IsometricRenderer::boundingRect(const MapObject *object) const
         QRectF bounds { pixelToScreenCoords(object->position()), object->size() };
         bounds.translate(-alignmentOffset(bounds, object->alignment(map())));
 
+        qreal extraX = 1;
+        qreal extraY = 1;
+
         if (const Tile *tile = object->cell().tile()) {
             QPointF tileOffset = tile->offset();
             const QSize tileSize = tile->size();
@@ -82,11 +85,16 @@ QRectF IsometricRenderer::boundingRect(const MapObject *object) const
                 };
                 tileOffset.rx() *= scale.width();
                 tileOffset.ry() *= scale.height();
+
+                if (testFlag(ShowTileObjectSilhouettes)) {
+                    extraX = qMax(qreal(1), scale.width());
+                    extraY = qMax(qreal(1), scale.height());
+                }
             }
             bounds.translate(tileOffset);
         }
 
-        return bounds.adjusted(-1, -1, 1, 1);
+        return bounds.adjusted(-extraX, -extraY, extraX, extraY);
     } else if (!object->polygon().isEmpty()) {
         qreal extraSpace = qMax(objectLineWidth(), qreal(1));
 
@@ -351,6 +359,9 @@ void IsometricRenderer::drawMapObject(QPainter *painter,
     if (!cell.isEmpty()) {
         QRectF bounds = { pixelToScreenCoords(object->position()), object->size() };
         bounds.translate(-alignmentOffset(bounds, object->alignment(map())));
+
+        if (testFlag(ShowTileObjectSilhouettes))
+            drawTileObjectSilhouette(painter, cell, bounds.topLeft(), bounds.size(), colors.main);
 
         CellRenderer(painter, this, object->objectGroup()->effectiveTintColor())
                 .render(cell, bounds.topLeft(), bounds.size());

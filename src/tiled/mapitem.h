@@ -126,6 +126,7 @@ private:
 
     void setObjectLineWidth(qreal lineWidth);
     void setShowTileObjectOutlines(bool enabled);
+    void setShowTileObjectSilhouettes(bool enabled);
 
     void createLayerItems(const QList<Layer *> &layers);
     LayerItem *createLayerItem(Layer *layer);

@@ -66,6 +66,7 @@ public:
     bool showWorldGrid() const;
     bool snapToWorldGrid() const;
     bool showTileObjectOutlines() const;
+    bool showTileObjectSilhouettes() const;
     bool showTileAnimations() const;
     bool showTileCollisionShapes() const;
     bool showObjectReferences() const;
@@ -205,6 +206,7 @@ public slots:
     void setShowWorldGrid(bool showWorldGrid);
     void setSnapToWorldGrid(bool snapToWorldGrid);
     void setShowTileObjectOutlines(bool enabled);
+    void setShowTileObjectSilhouettes(bool enabled);
     void setShowTileAnimations(bool enabled);
     void setShowTileCollisionShapes(bool enabled);
     void setShowObjectReferences(bool enabled);
@@ -232,6 +234,7 @@ signals:
     void showWorldGridChanged(bool showWorldGrid);
     void snapToWorldGridChanged(bool snapToWorldGrid);
     void showTileObjectOutlinesChanged(bool enabled);
+    void showTileObjectSilhouettesChanged(bool enabled);
     void showTileAnimationsChanged(bool enabled);
     void showTileCollisionShapesChanged(bool enabled);
     void showObjectReferencesChanged(bool enabled);

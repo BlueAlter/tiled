@@ -51,6 +51,7 @@ enum RenderFlag {
     ShowTileObjectOutlines = 0x1,
     ShowTileCollisionShapes = 0x2,
     ShowTileAnimations = 0x4,
+    ShowTileObjectSilhouettes = 0x8,
 };
 
 Q_DECLARE_FLAGS(RenderFlags, RenderFlag)
@@ -282,6 +283,10 @@ protected:
                        QPen &gridPen, QPen &majorGridPen, int gridSize,
                        QSize gridMajor) const;
 
+    void drawTileObjectSilhouette(QPainter *painter, const Cell &cell,
+                                  const QPointF &pos, const QSizeF &size,
+                                  const QColor &color) const;
+
     void setCellType(CellType cellType) { mCellType = cellType; }
 
 private:
@@ -331,7 +336,8 @@ public:
     };
 
     explicit CellRenderer(QPainter *painter, const MapRenderer *renderer,
-                          const QColor &tintColor);
+                          const QColor &tintColor,
+                          const QColor &silhouetteColor = QColor());
 
     ~CellRenderer() { flush(); }
 
@@ -341,6 +347,7 @@ public:
 
 private:
     void paintTileCollisionShapes();
+    QPixmap sourcePixmap(const Tile *tile) const;
 
     QPainter * const mPainter;
     const MapRenderer * const mRenderer;
@@ -348,6 +355,7 @@ private:
     QVector<QPainter::PixmapFragment> mFragments;
     const bool mIsOpenGL;
     const QColor mTintColor;
+    const QColor mSilhouetteColor;
 };
 
 } // namespace Tiled

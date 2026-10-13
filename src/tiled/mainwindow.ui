@@ -172,6 +172,7 @@
     <addaction name="actionShowGrid"/>
     <addaction name="actionShowWorldGrid"/>
     <addaction name="actionShowTileObjectOutlines"/>
+    <addaction name="actionShowTileObjectSilhouettes"/>
     <addaction name="actionShowObjectReferences"/>
     <addaction name="menuShowObjectNames"/>
     <addaction name="actionShowTileAnimations"/>
@@ -516,6 +517,14 @@
    </property>
    <property name="text">
     <string>Show Tile Object &amp;Outlines</string>
+   </property>
+  </action>
+  <action name="actionShowTileObjectSilhouettes">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Tile Object Silhouettes</string>
    </property>
   </action>
   <action name="actionSnapToFineGrid">

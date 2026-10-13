@@ -67,6 +67,9 @@ QRectF ObliqueRenderer::boundingRect(const MapObject *object) const
     bounds.translate(-alignmentOffset(bounds, object->alignment(map())));
 
     if (!object->cell().isEmpty()) {
+        qreal extraX = 1;
+        qreal extraY = 1;
+
         if (const Tile *tile = object->cell().tile()) {
             QPointF tileOffset = tile->offset();
             const QSize tileSize = tile->size();
@@ -77,6 +80,11 @@ QRectF ObliqueRenderer::boundingRect(const MapObject *object) const
                 };
                 tileOffset.rx() *= scale.width();
                 tileOffset.ry() *= scale.height();
+
+                if (testFlag(ShowTileObjectSilhouettes)) {
+                    extraX = qMax(qreal(1), scale.width());
+                    extraY = qMax(qreal(1), scale.height());
+                }
             }
             tileOffset = transform().map(tileOffset);
             bounds.translate(tileOffset);
@@ -84,7 +92,7 @@ QRectF ObliqueRenderer::boundingRect(const MapObject *object) const
 
         QPainterPath path;
         path.addRect(bounds);
-        return transform().map(path).boundingRect().adjusted(-1, -1, 1, 1);
+        return transform().map(path).boundingRect().adjusted(-extraX, -extraY, extraX, extraY);
     }
 
     const qreal extraSpace = qMax(objectLineWidth(), qreal(1));
@@ -347,6 +355,9 @@ void ObliqueRenderer::drawMapObject(QPainter *painter,
     if (!cell.isEmpty()) {
         QRectF bounds { pixelToScreenCoords(object->position()), object->size() };
         bounds.translate(-alignmentOffset(bounds, object->alignment(map())));
+
+        if (testFlag(ShowTileObjectSilhouettes))
+            drawTileObjectSilhouette(painter, cell, bounds.topLeft(), bounds.size(), colors.main);
 
         CellRenderer(painter, this, object->objectGroup()->effectiveTintColor())
                 .render(cell, bounds.topLeft(), bounds.size());

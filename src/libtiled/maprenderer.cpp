@@ -67,6 +67,25 @@ size_t qHash(const TintedKey &key, size_t seed) Q_DECL_NOTHROW
     return qHashMulti(seed, key.pixmapKey, key.rect, key.color.rgba());
 }
 
+struct SilhouetteKey
+{
+    const qint64 pixmapKey;
+    const QRect rect;
+    const QColor color;
+
+    bool operator==(const SilhouetteKey &o) const
+    {
+        return pixmapKey == o.pixmapKey &&
+                rect == o.rect &&
+                color == o.color;
+    }
+};
+
+size_t qHash(const SilhouetteKey &key, size_t seed) Q_DECL_NOTHROW
+{
+    return qHashMulti(seed, key.pixmapKey, key.rect, key.color.rgba());
+}
+
 // Borrowed from qpixmapcache.cpp
 static inline qsizetype cost(const QPixmap &pixmap)
 {
@@ -126,6 +145,36 @@ static QPixmap tinted(const QPixmap &pixmap, const QRect &rect, const QColor &co
     painter.end();
 
     cache.insert(tintedKey, new QPixmap(resultImage), cost(resultImage));
+
+    return resultImage;
+}
+
+static QPixmap silhouetted(const QPixmap &pixmap, const QRect &rect, const QColor &color)
+{
+    if (pixmap.isNull() || !color.isValid())
+        return pixmap;
+
+    // Cache for up to 100 MB of silhouetted pixmaps
+    static QCache<SilhouetteKey, QPixmap> cache { 100 * 1024 };
+
+    const SilhouetteKey silhouetteKey { pixmap.cacheKey(), rect, color };
+    if (auto cached = cache.object(silhouetteKey))
+        return *cached;
+
+    QPixmap resultImage = pixmap.copy(rect);
+
+    if (color.alpha() < 255 && !resultImage.hasAlphaChannel()) {
+        auto imageWithAlpha = resultImage.toImage();
+        imageWithAlpha.convertTo(QImage::Format_ARGB32_Premultiplied);
+        resultImage = QPixmap::fromImage(std::move(imageWithAlpha), Qt::NoOpaqueDetection);
+    }
+
+    QPainter painter(&resultImage);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    painter.fillRect(resultImage.rect(), color);
+    painter.end();
+
+    cache.insert(silhouetteKey, new QPixmap(resultImage), cost(resultImage));
 
     return resultImage;
 }
@@ -404,13 +453,21 @@ static bool hasOpenGLEngine(const QPainter *painter)
     return false;
 }
 
-CellRenderer::CellRenderer(QPainter *painter, const MapRenderer *renderer, const QColor &tintColor)
+CellRenderer::CellRenderer(QPainter *painter, const MapRenderer *renderer, const QColor &tintColor, const QColor &silhouetteColor)
     : mPainter(painter)
     , mRenderer(renderer)
     , mTile(nullptr)
     , mIsOpenGL(hasOpenGLEngine(painter))
     , mTintColor(tintColor)
+    , mSilhouetteColor(silhouetteColor)
 {
+}
+
+QPixmap CellRenderer::sourcePixmap(const Tile *tile) const
+{
+    if (mSilhouetteColor.isValid())
+        return silhouetted(tile->image(), tile->imageRect(), mSilhouetteColor);
+    return tinted(tile->image(), tile->imageRect(), mTintColor);
 }
 
 /**
@@ -446,12 +503,11 @@ void CellRenderer::render(const Cell &cell, const QPointF &screenPos, const QSiz
     if (mTile != tile || mFragments.size() == USHRT_MAX)
         flush();
 
-    const QPixmap &image = tile->image();
     QRect imageRect = tile->imageRect();
     if (imageRect.isEmpty())
         return;
 
-    if (needsTint(mTintColor))
+    if (needsTint(mTintColor) || mSilhouetteColor.isValid())
         imageRect.moveTopLeft(QPoint(0, 0));
 
     const QPoint offset = tile->offset();
@@ -539,11 +595,12 @@ void CellRenderer::render(const Cell &cell, const QPointF &screenPos, const QSiz
                         fragment.width, fragment.height);
 
     mPainter->setTransform(transform);
-    mPainter->drawPixmap(target, tinted(image, tile->imageRect(), mTintColor), source);
+    mPainter->drawPixmap(target, sourcePixmap(tile), source);
     mPainter->setTransform(oldTransform);
 
     // A bit of a hack to still draw tile collision shapes when requested
-    if (mRenderer->flags().testFlag(ShowTileCollisionShapes)
+    if (!mSilhouetteColor.isValid()
+            && mRenderer->flags().testFlag(ShowTileCollisionShapes)
             && tile->objectGroup()
             && !tile->objectGroup()->objects().isEmpty()) {
         mTile = tile;
@@ -564,11 +621,10 @@ void CellRenderer::flush()
 
     mPainter->drawPixmapFragments(mFragments.constData(),
                                   mFragments.size(),
-                                  tinted(mTile->image(),
-                                         mTile->imageRect(),
-                                         mTintColor));
+                                  sourcePixmap(mTile));
 
-    if (mRenderer->flags().testFlag(ShowTileCollisionShapes)
+    if (!mSilhouetteColor.isValid()
+            && mRenderer->flags().testFlag(ShowTileCollisionShapes)
             && mTile->objectGroup()
             && !mTile->objectGroup()->objects().isEmpty()) {
         paintTileCollisionShapes();
@@ -649,6 +705,40 @@ void CellRenderer::paintTileCollisionShapes()
                 mPainter->strokePath(shape, colorPen);
             else
                 mPainter->drawPath(shape);
+        }
+    }
+}
+
+void MapRenderer::drawTileObjectSilhouette(QPainter *painter,
+                                           const Cell &cell,
+                                           const QPointF &pos,
+                                           const QSizeF &size,
+                                           const QColor &color) const
+{
+    const Tile *tile = cell.tile();
+    if (!tile || !color.isValid())
+        return;
+
+    if (testFlag(ShowTileAnimations))
+        tile = tile->currentFrameTile();
+
+    if (!tile)
+        return;
+
+    const QSize tileSize = tile->size();
+    if (tileSize.isEmpty() || size.isEmpty())
+        return;
+
+    const QPointF step(size.width() / tileSize.width(),
+                       size.height() / tileSize.height());
+
+    CellRenderer renderer(painter, this, QColor(), color);
+
+    for (int dx = -1; dx <= 1; ++dx) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            if (dx == 0 && dy == 0)
+                continue;
+            renderer.render(cell, pos + QPointF(dx * step.x(), dy * step.y()), size);
         }
     }
 }

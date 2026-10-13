@@ -57,6 +57,9 @@ QRectF OrthogonalRenderer::boundingRect(const MapObject *object) const
     QRectF boundingRect;
 
     if (!object->cell().isEmpty()) {
+        qreal extraX = 1;
+        qreal extraY = 1;
+
         if (const Tile *tile = object->cell().tile()) {
             QPointF tileOffset = tile->offset();
             const QSize tileSize = tile->size();
@@ -67,11 +70,16 @@ QRectF OrthogonalRenderer::boundingRect(const MapObject *object) const
                 };
                 tileOffset.rx() *= scale.width();
                 tileOffset.ry() *= scale.height();
+
+                if (testFlag(ShowTileObjectSilhouettes)) {
+                    extraX = qMax(qreal(1), scale.width());
+                    extraY = qMax(qreal(1), scale.height());
+                }
             }
             bounds.translate(tileOffset);
         }
 
-        boundingRect = bounds.adjusted(-1, -1, 1, 1);
+        boundingRect = bounds.adjusted(-extraX, -extraY, extraX, extraY);
     } else {
         qreal extraSpace = qMax(objectLineWidth(), qreal(1));
 
@@ -356,6 +364,9 @@ void OrthogonalRenderer::drawMapObject(QPainter *painter,
     const Cell &cell = object->cell();
 
     if (!cell.isEmpty()) {
+        if (testFlag(ShowTileObjectSilhouettes))
+            drawTileObjectSilhouette(painter, cell, QPointF(), bounds.size(), colors.main);
+
         CellRenderer(painter, this, object->objectGroup()->effectiveTintColor())
                 .render(cell, QPointF(), bounds.size());
 

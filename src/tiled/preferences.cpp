@@ -193,6 +193,11 @@ bool Preferences::showTileObjectOutlines() const
     return get("Interface/ShowTileObjectOutlines", false);
 }
 
+bool Preferences::showTileObjectSilhouettes() const
+{
+    return get("Interface/ShowTileObjectSilhouettes", false);
+}
+
 bool Preferences::showTileAnimations() const
 {
     return get("Interface/ShowTileAnimations", true);
@@ -367,6 +372,12 @@ void Preferences::setShowTileObjectOutlines(bool enabled)
 {
     setValue(QLatin1String("Interface/ShowTileObjectOutlines"), enabled);
     emit showTileObjectOutlinesChanged(enabled);
+}
+
+void Preferences::setShowTileObjectSilhouettes(bool enabled)
+{
+    setValue(QLatin1String("Interface/ShowTileObjectSilhouettes"), enabled);
+    emit showTileObjectSilhouettesChanged(enabled);
 }
 
 void Preferences::setShowTileAnimations(bool enabled)

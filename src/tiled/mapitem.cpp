@@ -147,9 +147,11 @@ MapItem::MapItem(const MapDocumentPtr &mapDocument, DisplayMode displayMode,
     MapRenderer *renderer = mapDocument->renderer();
     renderer->setObjectLineWidth(prefs->objectLineWidth());
     renderer->setFlag(ShowTileObjectOutlines, prefs->showTileObjectOutlines());
+    renderer->setFlag(ShowTileObjectSilhouettes, prefs->showTileObjectSilhouettes());
 
     connect(prefs, &Preferences::objectLineWidthChanged, this, &MapItem::setObjectLineWidth);
     connect(prefs, &Preferences::showTileObjectOutlinesChanged, this, &MapItem::setShowTileObjectOutlines);
+    connect(prefs, &Preferences::showTileObjectSilhouettesChanged, this, &MapItem::setShowTileObjectSilhouettes);
     connect(prefs, &Preferences::highlightCurrentLayerChanged, this, &MapItem::updateSelectedLayersHighlight);
     connect(prefs, &Preferences::propertyTypesChanged, this, &MapItem::syncAllObjectItems);
     connect(prefs, &Preferences::backgroundFadeColorChanged, this, [this] (QColor color) { mDarkRectangle->setBrush(color); });
@@ -363,8 +365,11 @@ void MapItem::documentChanged(const ChangeEvent &change)
         break;
     case ChangeEvent::DocumentReloaded: {
         // The renderer has been re-created
-        auto lineWidth = Preferences::instance()->objectLineWidth();
-        mapDocument()->renderer()->setObjectLineWidth(lineWidth);
+        auto prefs = Preferences::instance();
+        auto renderer = mapDocument()->renderer();
+        renderer->setObjectLineWidth(prefs->objectLineWidth());
+        renderer->setFlag(ShowTileObjectOutlines, prefs->showTileObjectOutlines());
+        renderer->setFlag(ShowTileObjectSilhouettes, prefs->showTileObjectSilhouettes());
 
         createLayerItems(mMapDocument->map()->layers());
 
@@ -380,10 +385,12 @@ void MapItem::documentChanged(const ChangeEvent &change)
                 for (Object *object : objectsChange.objects)
                     mObjectItems.value(static_cast<MapObject*>(object))->syncWithMapObject();
             } else if (typeId == Object::TileType) {
-                if (mapDocument()->renderer()->testFlag(ShowTileObjectOutlines))
+                if (mapDocument()->renderer()->testFlag(ShowTileObjectOutlines) ||
+                        mapDocument()->renderer()->testFlag(ShowTileObjectSilhouettes)) {
                     for (MapObjectItem *item : std::as_const(mObjectItems))
                         if (item->mapObject()->isTileObject())
                             item->syncWithMapObject();
+                }
             }
         }
 
@@ -755,6 +762,18 @@ void MapItem::setShowTileObjectOutlines(bool enabled)
     for (MapObjectItem *item : std::as_const(mObjectItems)) {
         if (!item->mapObject()->cell().isEmpty())
             item->update();
+    }
+}
+
+void MapItem::setShowTileObjectSilhouettes(bool enabled)
+{
+    mapDocument()->renderer()->setFlag(ShowTileObjectSilhouettes, enabled);
+
+    for (MapObjectItem *item : std::as_const(mObjectItems)) {
+        if (!item->mapObject()->cell().isEmpty()) {
+            item->syncWithMapObject();
+            item->update();
+        }
     }
 }
 
