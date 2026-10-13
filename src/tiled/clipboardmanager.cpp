@@ -21,6 +21,8 @@
 #include "clipboardmanager.h"
 
 #include "addremovemapobject.h"
+#include "addremovelayer.h"
+#include "grouplayer.h"
 #include "map.h"
 #include "mapdocument.h"
 #include "mapobject.h"
@@ -48,6 +50,7 @@
 #include <algorithm>
 
 static const char * const TMX_MIMETYPE = "text/tmx";
+static const char * const TILED_LAYERS_MIMETYPE = "application/x-tiled-layers";
 
 using namespace Tiled;
 
@@ -200,6 +203,45 @@ bool ClipboardManager::copySelection(const MapDocument &mapDocument)
     return false;
 }
 
+bool ClipboardManager::copyLayers(const MapDocument &mapDocument)
+{
+    const Map *map = mapDocument.map();
+    const QList<Layer*> selectedLayers = mapDocument.selectedLayersOrdered();
+
+    if (selectedLayers.isEmpty())
+        return false;
+
+    QList<Layer*> topLevelLayers;
+    for (Layer *layer : selectedLayers) {
+        bool ancestorSelected = false;
+        for (GroupLayer *parent = layer->parentLayer(); parent; parent = parent->parentLayer()) {
+            if (selectedLayers.contains(parent)) {
+                ancestorSelected = true;
+                break;
+            }
+        }
+        if (!ancestorSelected)
+            topLevelLayers.append(layer);
+    }
+
+    if (topLevelLayers.isEmpty())
+        return false;
+
+    Map copyMap(map->parameters());
+    for (Layer *layer : topLevelLayers)
+        copyMap.addLayer(layer->clone());
+
+    copyMap.addTilesets(copyMap.usedTilesets());
+
+    TmxMapFormat format;
+    auto mimeData = new QMimeData;
+    mimeData->setData(QLatin1String(TMX_MIMETYPE), format.toByteArray(&copyMap));
+    mimeData->setData(QLatin1String(TILED_LAYERS_MIMETYPE), QByteArrayLiteral("1"));
+    mClipboard->setMimeData(mimeData);
+
+    return true;
+}
+
 /**
  * Convenience method that deals with some of the logic related to pasting
  * a group of objects.
@@ -267,16 +309,52 @@ void ClipboardManager::pasteObjectGroup(const ObjectGroup *objectGroup,
     mapDocument->setSelectedObjects(AddMapObjects::objects(objectsToAdd));
 }
 
+void ClipboardManager::pasteLayers(MapDocument *mapDocument)
+{
+    if (!mapDocument || !hasFullLayers())
+        return;
+
+    std::unique_ptr<Map> clipboardMap = map();
+    if (!clipboardMap)
+        return;
+
+    const int layerCount = clipboardMap->layerCount();
+    if (layerCount == 0)
+        return;
+
+    mapDocument->unifyTilesets(*clipboardMap);
+
+    QList<Layer*> pastedLayers;
+    for (int i = layerCount - 1; i >= 0; --i)
+        pastedLayers.prepend(clipboardMap->takeLayerAt(i));
+
+    ObjectReferencesHelper objectRefs(mapDocument->map());
+    for (Layer *layer : pastedLayers)
+        objectRefs.reassignIds(layer);
+    objectRefs.rewire();
+
+    mapDocument->undoStack()->beginMacro(tr("Paste Layers"));
+    for (Layer *layer : pastedLayers) {
+        const int index = mapDocument->map()->layerCount();
+        mapDocument->undoStack()->push(new AddLayer(mapDocument, index, layer, nullptr));
+    }
+    mapDocument->undoStack()->endMacro();
+
+    mapDocument->switchSelectedLayers(pastedLayers);
+}
+
 void ClipboardManager::update()
 {
     bool hasMap = false;
     bool hasProperties = false;
     bool hasListValues = false;
+    bool hasFullLayers = false;
 
     if (const auto data = mClipboard->mimeData()) {
         hasMap = data->hasFormat(QLatin1String(TMX_MIMETYPE));
         hasProperties = data->hasFormat(QLatin1String(PROPERTIES_MIMETYPE));
         hasListValues = data->hasFormat(QLatin1String(LIST_VALUES_MIMETYPE));
+        hasFullLayers = data->hasFormat(QLatin1String(TILED_LAYERS_MIMETYPE));
     }
 
     if (hasMap != mHasMap) {
@@ -292,6 +370,11 @@ void ClipboardManager::update()
     if (hasListValues != mHasListValues) {
         mHasListValues = hasListValues;
         emit hasValuesChanged();
+    }
+
+    if (hasFullLayers != mHasFullLayers) {
+        mHasFullLayers = hasFullLayers;
+        emit hasFullLayersChanged();
     }
 }
 
