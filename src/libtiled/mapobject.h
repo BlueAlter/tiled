@@ -124,7 +124,8 @@ public:
         TemplateProperty        = 1 << 13,
         CustomProperties        = 1 << 14,
         ColorProperty           = 1 << 15,
-        AllProperties           = 0xFFFF
+        CommentProperty         = 1 << 16,
+        AllProperties           = 0x1FFFF
     };
 
     Q_DECLARE_FLAGS(ChangedProperties, Property)
@@ -201,6 +202,13 @@ public:
     const QColor &color() const;
     void setColor(const QColor &color);
 
+    /**
+     * Returns the comment stored on this object. This is intended for
+     * notes and documentation, and is not used by the editor itself.
+     */
+    const QString &comment() const;
+    void setComment(const QString &comment);
+
     const ObjectTemplate *objectTemplate() const;
     void setObjectTemplate(const ObjectTemplate *objectTemplate);
 
@@ -260,6 +268,7 @@ private:
     QPolygonF mPolygon;
     Cell mCell;
     QColor mColor;
+    QString mComment;
     const ObjectTemplate *mObjectTemplate = nullptr;
     ObjectGroup *mObjectGroup = nullptr;
     qreal mRotation = 0.0;
@@ -461,6 +470,12 @@ inline const QColor &MapObject::color() const
 
 inline void MapObject::setColor(const QColor &color)
 { mColor = color; }
+
+inline const QString &MapObject::comment() const
+{ return mComment; }
+
+inline void MapObject::setComment(const QString &comment)
+{ mComment = comment; }
 
 /**
  * Sets the tile that is associated with this object. The object will

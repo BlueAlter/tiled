@@ -316,6 +316,7 @@ QVariant MapObject::mapObjectProperty(Property property) const
     case TextWordWrapProperty:  return mTextData.wordWrap;
     case TextColorProperty:     return mTextData.color;
     case ColorProperty:         return mColor;
+    case CommentProperty:       return mComment;
     case PositionProperty:      return mPos;
     case SizeProperty:          return mSize;
     case RotationProperty:      return mRotation;
@@ -340,6 +341,7 @@ void MapObject::setMapObjectProperty(Property property, const QVariant &value)
     case TextWordWrapProperty:  mTextData.wordWrap = value.toBool(); break;
     case TextColorProperty:     mTextData.color = value.value<QColor>(); break;
     case ColorProperty:         setColor(value.value<QColor>()); break;
+    case CommentProperty:       setComment(value.toString()); break;
     case PositionProperty:      setPosition(value.toPointF()); break;
     case SizeProperty:          setSize(value.toSizeF()); break;
     case RotationProperty:      setRotation(value.toReal()); break;
@@ -384,6 +386,7 @@ MapObject *MapObject::clone() const
     o->setShape(mShape);
     o->setCell(mCell);
     o->setColor(mColor);
+    o->setComment(mComment);
     o->setRotation(mRotation);
     o->setOpacity(mOpacity);
     o->setVisible(mVisible);
@@ -401,6 +404,7 @@ void MapObject::copyPropertiesFrom(const MapObject *object)
     setShape(object->shape());
     setCell(object->cell());
     setColor(object->color());
+    setComment(object->comment());
     setRotation(object->rotation());
     setOpacity(object->opacity());
     setVisible(object->isVisible());
@@ -441,6 +445,9 @@ void MapObject::syncWithTemplate()
 
     if (!propertyChanged(MapObject::ColorProperty))
         setColor(base->color());
+
+    if (!propertyChanged(MapObject::CommentProperty))
+        setComment(base->comment());
 
     if (!propertyChanged(MapObject::RotationProperty))
         setRotation(base->rotation());

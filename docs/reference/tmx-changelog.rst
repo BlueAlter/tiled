@@ -7,6 +7,10 @@ Below are described the changes/additions that were made to the
 Tiled 1.13
 ----------
 
+-  Added ``comment`` attribute to :ref:`tmx-layer` and :ref:`tmx-object` to
+   store notes or documentation. Tiled does not use this information itself,
+   but it is available to other tools reading the map.
+
 -  Added ``color`` attribute to :ref:`tmx-object` to override the color used
    to display the object. Objects without this attribute keep using the color
    of their :ref:`object layer <tmx-objectgroup>`.

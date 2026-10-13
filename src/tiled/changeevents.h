@@ -130,8 +130,9 @@ public:
         ParallaxFactorProperty  = 1 << 5,
         BlendModeProperty       = 1 << 6,
         TintColorProperty       = 1 << 7,
+        CommentProperty         = 1 << 8,
         PositionProperties      = OffsetProperty | ParallaxFactorProperty,
-        AllProperties           = 0xFF
+        AllProperties           = 0x1FF
     };
 
     LayerChangeEvent(Layer *layer, int properties = AllProperties)

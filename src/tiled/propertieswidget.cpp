@@ -1123,6 +1123,15 @@ public:
                                                    value));
                     });
 
+        mCommentProperty = new TextAreaProperty(
+                    tr("Comment"),
+                    [this] { return layer()->comment(); },
+                    [this](const QString &value) {
+                        push(new SetLayerComment(mapDocument(),
+                                                mapDocument()->selectedLayers(),
+                                                value));
+                    });
+
         mBlendModeProperty = new EnumProperty<BlendMode>(
                     tr("Blend Mode"),
                     [this] { return layer()->blendMode(); },
@@ -1171,6 +1180,7 @@ public:
         mLayerProperties->addProperty(mIdProperty);
         mLayerProperties->addProperty(mNameProperty);
         mLayerProperties->addProperty(mClassProperty);
+        mLayerProperties->addProperty(mCommentProperty);
         mLayerProperties->addSeparator();
         mLayerProperties->addProperty(mVisibleProperty);
         mLayerProperties->addProperty(mLockedProperty);
@@ -1212,6 +1222,8 @@ protected:
             emit mOffsetProperty->valueChanged();
         if (layerChange.properties & LayerChangeEvent::ParallaxFactorProperty)
             emit mParallaxFactorProperty->valueChanged();
+        if (layerChange.properties & LayerChangeEvent::CommentProperty)
+            emit mCommentProperty->valueChanged();
     }
 
     MapDocument *mapDocument() const
@@ -1248,6 +1260,7 @@ protected:
     BaseEnumProperty *mBlendModeProperty;
     Property *mOffsetProperty;
     PointFProperty *mParallaxFactorProperty;
+    TextAreaProperty *mCommentProperty;
 };
 
 class ImageLayerProperties : public LayerProperties
@@ -1849,11 +1862,21 @@ public:
                         changeMapObject(MapObject::ColorProperty, value);
                     });
 
+        mCommentProperty = new TextAreaProperty(
+                    tr("Comment"),
+                    [this] {
+                        return mapObject()->comment();
+                    },
+                    [this](const QString &value) {
+                        changeMapObject(MapObject::CommentProperty, value);
+                    });
+
         mObjectProperties = new GroupProperty(tr("Object"));
         mObjectProperties->addProperty(mIdProperty);
         mObjectProperties->addProperty(mTemplateProperty);
         mObjectProperties->addProperty(mNameProperty);
         mObjectProperties->addProperty(mClassProperty);
+        mObjectProperties->addProperty(mCommentProperty);
         mObjectProperties->addSeparator();
 
         if (mapDocument()->allowHidingObjects())
@@ -1930,6 +1953,8 @@ private:
             emit mTextColorProperty->valueChanged();
         if (change.properties & MapObject::ColorProperty)
             emit mColorProperty->valueChanged();
+        if (change.properties & MapObject::CommentProperty)
+            emit mCommentProperty->valueChanged();
     }
 
     void updateEnabledState()
@@ -1989,6 +2014,7 @@ private:
     BoolProperty *mVisibleProperty;
     IntProperty *mOpacityProperty;
     Property *mColorProperty;
+    TextAreaProperty *mCommentProperty;
     Property *mPositionProperty;
     Property *mBoundsProperty;
     FloatProperty *mRotationProperty;

@@ -747,6 +747,9 @@ void LuaWriter::writeMapObject(const Tiled::MapObject *mapObject)
     if (mapObject->color().isValid())
         writeColor("color", mapObject->color());
 
+    if (!mapObject->comment().isEmpty())
+        mWriter.writeKeyAndValue("comment", mapObject->comment());
+
     switch (mapObject->shape()) {
     case MapObject::Rectangle:
     case MapObject::Ellipse:
@@ -782,6 +785,9 @@ void LuaWriter::writeLayerProperties(const Layer *layer)
     mWriter.writeKeyAndValue("class", layer->className());
     mWriter.writeKeyAndValue("visible", layer->isVisible());
     mWriter.writeKeyAndValue("opacity", layer->opacity());
+
+    if (!layer->comment().isEmpty())
+        mWriter.writeKeyAndValue("comment", layer->comment());
 
     const QPointF offset = layer->offset();
     mWriter.writeKeyAndValue("offsetx", offset.x());

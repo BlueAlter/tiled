@@ -266,6 +266,11 @@ void EditableMapObject::setColor(const QColor &color)
     setMapObjectProperty(MapObject::ColorProperty, color);
 }
 
+void EditableMapObject::setComment(const QString &comment)
+{
+    setMapObjectProperty(MapObject::CommentProperty, comment);
+}
+
 void EditableMapObject::setTile(EditableTile *tile)
 {
     if (Document *doc = document()) {

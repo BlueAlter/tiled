@@ -608,6 +608,7 @@ std::unique_ptr<Layer> VariantToMapConverter::toLayer(const QVariant &variant)
         layer->setVisible(variantMap[QStringLiteral("visible")].toBool());
         layer->setLocked(variantMap[QStringLiteral("locked")].toBool());
         layer->setTintColor(variantMap[QStringLiteral("tintcolor")].value<QColor>());
+        layer->setComment(variantMap[QStringLiteral("comment")].toString());
         layer->setProperties(extractProperties(variantMap));
 
         const QPointF offset(variantMap[QStringLiteral("offsetx")].toDouble(),
@@ -787,6 +788,12 @@ std::unique_ptr<MapObject> VariantToMapConverter::toMapObject(const QVariantMap 
     if (!colorString.isEmpty()) {
         object->setColor(QColor(colorString));
         object->setPropertyChanged(MapObject::ColorProperty);
+    }
+
+    const QString comment = variantMap.value(QLatin1String("comment")).toString();
+    if (!comment.isEmpty()) {
+        object->setComment(comment);
+        object->setPropertyChanged(MapObject::CommentProperty);
     }
 
     object->setProperties(extractProperties(variantMap));

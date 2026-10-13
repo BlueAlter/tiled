@@ -115,6 +115,27 @@ void SetLayerTintColor::setValue(Layer *layer, const QColor &value) const
 }
 
 
+SetLayerComment::SetLayerComment(Document *document,
+                                 QList<Layer *> layers,
+                                 const QString &comment)
+    : ChangeValue<Layer, QString>(document, std::move(layers), comment)
+{
+    setText(QCoreApplication::translate("Undo Commands",
+                                        "Change Layer Comment"));
+}
+
+QString SetLayerComment::getValue(const Layer *layer) const
+{
+    return layer->comment();
+}
+
+void SetLayerComment::setValue(Layer *layer, const QString &value) const
+{
+    layer->setComment(value);
+    emit document()->changed(LayerChangeEvent(layer, LayerChangeEvent::CommentProperty));
+}
+
+
 SetLayerOpacity::SetLayerOpacity(Document *document,
                                  QList<Layer *> layers,
                                  qreal opacity)
