@@ -24,12 +24,14 @@
 #include "fileedit.h"
 #include "listedit.h"
 #include "propertyeditorwidgets.h"
+#include "texteditordialog.h"
 #include "textpropertyedit.h"
 #include "utils.h"
 
 #include <QBoxLayout>
 #include <QCheckBox>
 #include <QFileInfo>
+#include <QFontMetrics>
 #include <QFontComboBox>
 #include <QGridLayout>
 #include <QGuiApplication>
@@ -41,6 +43,7 @@
 #include <QPointer>
 #include <QResizeEvent>
 #include <QSpacerItem>
+#include <QTextEdit>
 #include <QToolButton>
 
 namespace Tiled {
@@ -231,6 +234,64 @@ QWidget *MultilineStringProperty::createEditor(QWidget *parent)
     connect(editor, &TextPropertyEdit::textChanged, this, &StringProperty::setValue);
 
     return editor;
+}
+
+QWidget *TextAreaProperty::createEditor(QWidget *parent)
+{
+    auto container = new QWidget(parent);
+    container->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
+
+    auto layout = new QVBoxLayout(container);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(2);
+
+    auto textEdit = new QTextEdit(container);
+    textEdit->setAcceptRichText(false);
+    textEdit->setPlaceholderText(placeholderText());
+    textEdit->setFixedHeight(QFontMetrics(parent->font()).height() * 4 + 10);
+    textEdit->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+
+    auto buttonRow = new QHBoxLayout;
+    buttonRow->setContentsMargins(0, 0, 0, 0);
+    auto spacer = new QWidget(container);
+    buttonRow->addWidget(spacer, 1);
+
+    auto button = new QToolButton(container);
+    button->setText(QStringLiteral("…"));
+    button->setAutoRaise(true);
+    button->setToolTip(tr("Open in a larger dialog"));
+    buttonRow->addWidget(button);
+
+    layout->addWidget(textEdit);
+    layout->addLayout(buttonRow);
+
+    auto syncEditor = [=] {
+        const auto v = value();
+        if (textEdit->toPlainText() != v)
+            textEdit->setPlainText(v);
+    };
+    syncEditor();
+
+    auto openDialog = [=] {
+        TextEditorDialog dialog(textEdit->window());
+        dialog.setText(textEdit->toPlainText());
+        dialog.resize(500, 400);
+        if (dialog.exec() == QDialog::Accepted) {
+            textEdit->setPlainText(dialog.text());
+        }
+    };
+
+    connect(this, &StringProperty::valueChanged, container, syncEditor);
+    connect(this, &StringProperty::placeholderTextChanged,
+            textEdit, &QTextEdit::setPlaceholderText);
+    connect(textEdit, &QTextEdit::textChanged, this, [=] {
+        const auto v = textEdit->toPlainText();
+        if (value() != v)
+            setValue(v);
+    });
+    connect(button, &QToolButton::clicked, container, [openDialog] { openDialog(); });
+
+    return container;
 }
 
 QWidget *UrlProperty::createEditor(QWidget *parent)

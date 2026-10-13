@@ -211,6 +211,7 @@ Layer *Layer::initializeClone(Layer *clone) const
     clone->mOpacity = mOpacity;
     clone->mBlendMode = mBlendMode;
     clone->mTintColor = mTintColor;
+    clone->mComment = mComment;
     clone->mVisible = mVisible;
     clone->mLocked = mLocked;
     clone->setProperties(properties());

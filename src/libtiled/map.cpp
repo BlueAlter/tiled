@@ -403,6 +403,7 @@ void Map::copyLayers(const QList<Layer *> &layers,
             copyLayer->setPosition(area.boundingRect().topLeft());
             copyLayer->setOpacity(tileLayer->opacity());
             copyLayer->setTintColor(tileLayer->tintColor());
+            copyLayer->setComment(tileLayer->comment());
 
             targetMap.addLayer(std::move(copyLayer));
             break;

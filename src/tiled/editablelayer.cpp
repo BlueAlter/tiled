@@ -178,6 +178,14 @@ void EditableLayer::setTintColor(const QColor &color)
         layer()->setTintColor(color);
 }
 
+void EditableLayer::setComment(const QString &comment)
+{
+    if (auto doc = document())
+        asset()->push(new SetLayerComment(doc, { layer() }, comment));
+    else if (!checkReadOnly())
+        layer()->setComment(comment);
+}
+
 void EditableLayer::setVisible(bool visible)
 {
     if (auto doc = document())

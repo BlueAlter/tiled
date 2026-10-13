@@ -435,6 +435,9 @@ tiles.
    ``normal``, ``add``, ``multiply``, ``screen``, ``overlay``, ``darken``, ``lighten``,
    ``color-dodge``, ``color-burn``, ``hard-light``, ``soft-light``,
    ``difference`` and ``exclusion`` (since 1.12, defaults to ``normal``).
+-  **comment:** An arbitrary string used by the editor to store notes or
+   documentation about this layer. It is ignored by Tiled itself. (optional,
+   since 1.13)
 
 Can contain at most one: :ref:`tmx-properties`, :ref:`tmx-data`
 
@@ -530,6 +533,9 @@ and should generally be avoided.
 -  **draworder:** Whether the objects are drawn according to the order of
    appearance ("index") or sorted by their y-coordinate ("topdown").
    (defaults to "topdown")
+-  **comment:** An arbitrary string used by the editor to store notes or
+   documentation about this layer. It is ignored by Tiled itself. (optional,
+   since 1.13)
 
 The object group is in fact a map layer, and is hence called "object
 layer" in Tiled.
@@ -566,6 +572,9 @@ Can contain any number: :ref:`tmx-object`
 -  **visible:** Whether the object is shown (1) or hidden (0). (defaults to
    1)
 -  **template:** A reference to a :ref:`template file <tmx-template-files>`. (optional)
+-  **comment:** An arbitrary string used by the editor to store notes or
+   documentation about this object. It is ignored by Tiled itself. (optional,
+   since 1.13)
 
 While tile layers are very suitable for anything repetitive aligned to
 the tile grid, sometimes you want to annotate your map with other

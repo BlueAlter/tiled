@@ -87,6 +87,8 @@ Layer
 
     chunks,           array,            "Array of :ref:`chunks <json-chunk>` (optional). ``tilelayer`` only."
     class,            string,           "The class of the layer (since 1.9, optional)"
+    color,            string,           "Hex-formatted color (#RRGGBB or #AARRGGBB) used to display the objects in this layer. ``objectgroup`` only. (optional)"
+    comment,          string,           "Arbitrary string used to store notes about the layer, ignored by Tiled itself (optional, since 1.13)"
     compression,      string,           "``zlib``, ``gzip``, ``zstd`` (since 1.3) or empty (default). ``tilelayer`` only."
     data,             array or string,  "Array of ``unsigned int`` (GIDs) or base64-encoded data. ``tilelayer`` only."
     draworder,        string,           "``topdown`` (default) or ``index``. ``objectgroup`` only."
@@ -237,6 +239,7 @@ Object
 
     capsule,          bool,             "Used to mark an object as a capsule"
     color,            string,           "Hex-formatted color (#RRGGBB or #AARRGGBB) used to display the object, overriding the color of its object layer (optional, since 1.13)"
+    comment,          string,           "Arbitrary string used to store notes about the object, ignored by Tiled itself (optional, since 1.13)"
     ellipse,          bool,             "Used to mark an object as an ellipse"
     gid,              int,              "Global tile ID, only if object represents a tile"
     height,           double,           "Height in pixels."
@@ -811,6 +814,10 @@ Changelog
 
 Tiled 1.13
 ~~~~~~~~~~
+
+* Added ``comment`` property to :ref:`json-object` and :ref:`json-layer`. Tiled
+  does not use this information itself, but it is available to other tools
+  reading the map.
 
 * Added ``color`` property to :ref:`json-object`, which overrides the color
   used to display the object. Objects without this property keep using the
