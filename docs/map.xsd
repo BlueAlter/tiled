@@ -440,6 +440,7 @@
     <xs:attribute name="visible" type="xs:boolean" default="1"/>
     <xs:attribute name="offsetx" type="xs:double" default="0"/>
     <xs:attribute name="offsety" type="xs:double" default="0"/>
+    <xs:attribute name="comment" type="xs:string" use="optional"/>
   </xs:attributeGroup>
 
   <xs:attributeGroup name="data.layer">
@@ -472,6 +473,7 @@
     <xs:attribute name="rotation" type="degreesT" use="optional" default="0"/>
     <xs:attribute name="gid" type="tileId" use="optional" default="0"/>
     <xs:attribute name="visible" type="xs:boolean" use="optional" default="1"/>
+    <xs:attribute name="comment" type="xs:string" use="optional"/>
   </xs:attributeGroup>
 
 </xs:schema>

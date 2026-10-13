@@ -306,6 +306,17 @@ struct MultilineStringProperty : StringProperty
     QWidget *createEditor(QWidget *parent) override;
 };
 
+/**
+ * A string property that is edited in a multi-line text area, for values
+ * such as comments that are too long for a single line. A button next to
+ * the text area opens the same text in a larger dialog.
+ */
+struct TextAreaProperty : StringProperty
+{
+    using StringProperty::StringProperty;
+    QWidget *createEditor(QWidget *parent) override;
+};
+
 struct UrlProperty : PropertyTemplate<QUrl>
 {
     using PropertyTemplate::PropertyTemplate;

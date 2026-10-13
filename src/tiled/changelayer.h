@@ -114,6 +114,23 @@ private:
 };
 
 /**
+ * Used for changing the layer comment.
+ */
+class SetLayerComment : public ChangeValue<Layer, QString>
+{
+public:
+    SetLayerComment(Document *document,
+                    QList<Layer *> layers,
+                    const QString &comment);
+
+    int id() const override { return Cmd_ChangeLayerComment; }
+
+private:
+    QString getValue(const Layer *layer) const override;
+    void setValue(Layer *layer, const QString &value) const override;
+};
+
+/**
  * Used for changing the layer offset.
  */
 class SetLayerOffset : public ChangeValue<Layer, QPointF>

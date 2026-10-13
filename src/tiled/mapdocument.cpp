@@ -1090,6 +1090,7 @@ void MapDocument::paintTileLayers(const Map &map, bool mergeable,
                                                    mMap->height());
             newLayer->setOpacity(source->opacity());
             newLayer->setTintColor(source->tintColor());
+            newLayer->setComment(source->comment());
             target = newLayer.get();
         }
 

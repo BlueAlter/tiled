@@ -61,6 +61,7 @@ class EditableLayer : public EditableObject
     Q_PROPERTY(QString name READ name WRITE setName)
     Q_PROPERTY(qreal opacity READ opacity WRITE setOpacity)
     Q_PROPERTY(QColor tintColor READ tintColor WRITE setTintColor)
+    Q_PROPERTY(QString comment READ comment WRITE setComment)
     Q_PROPERTY(bool visible READ isVisible WRITE setVisible)
     Q_PROPERTY(bool locked READ isLocked WRITE setLocked)
     Q_PROPERTY(QPointF offset READ offset WRITE setOffset)
@@ -96,6 +97,7 @@ public:
     const QString &name() const;
     qreal opacity() const;
     QColor tintColor() const;
+    QString comment() const;
     bool isVisible() const;
     bool isLocked() const;
     QPointF offset() const;
@@ -124,6 +126,7 @@ public slots:
     void setName(const QString &name);
     void setOpacity(qreal opacity);
     void setTintColor(const QColor &color);
+    void setComment(const QString &comment);
     void setVisible(bool visible);
     void setLocked(bool locked);
     void setOffset(QPointF offset);
@@ -158,6 +161,11 @@ inline QColor EditableLayer::tintColor() const
 {
     return layer()->tintColor().isValid() ? layer()->tintColor()
                                           : QColor(255, 255, 255, 255);
+}
+
+inline QString EditableLayer::comment() const
+{
+    return layer()->comment();
 }
 
 inline bool EditableLayer::isVisible() const

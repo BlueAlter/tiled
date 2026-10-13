@@ -673,6 +673,8 @@ void MapWriterPrivate::writeLayerAttributes(QXmlStreamWriter &w,
         w.writeAttribute(QStringLiteral("tintcolor"),
                          colorToString(layer.tintColor()));
     }
+    if (!layer.comment().isEmpty())
+        w.writeAttribute(QStringLiteral("comment"), layer.comment());
 
     const QPointF offset = layer.offset();
     if (!offset.isNull()) {
@@ -773,6 +775,9 @@ void MapWriterPrivate::writeObject(QXmlStreamWriter &w,
 
     if (shouldWrite(!mapObject.isVisible(), isTemplateInstance, mapObject.propertyChanged(MapObject::VisibleProperty)))
         w.writeAttribute(QStringLiteral("visible"), QLatin1String(mapObject.isVisible() ? "1" : "0"));
+
+    if (shouldWrite(!mapObject.comment().isEmpty(), isTemplateInstance, mapObject.propertyChanged(MapObject::CommentProperty)))
+        w.writeAttribute(QStringLiteral("comment"), mapObject.comment());
 
     writeProperties(w, mapObject.properties());
 

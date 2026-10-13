@@ -41,6 +41,7 @@ enum UndoCommands {
     Cmd_ChangeLayerOpacity,
     Cmd_ChangeLayerParallaxFactor,
     Cmd_ChangeLayerTintColor,
+    Cmd_ChangeLayerComment,
     Cmd_ChangeLayerVisible,
     Cmd_ChangeMapBackgroundColor,
     Cmd_ChangeMapChunkSize,

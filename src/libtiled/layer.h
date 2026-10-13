@@ -81,6 +81,13 @@ public:
     void setTintColor(const QColor &tintColor) { mTintColor = tintColor; }
 
     /**
+     * Returns the comment stored on this layer. This is intended for notes
+     * and documentation, and is not used by the editor itself.
+     */
+    const QString &comment() const { return mComment; }
+    void setComment(const QString &comment) { mComment = comment; }
+
+    /**
      * Returns the type of this layer.
      */
     TypeFlag layerType() const { return mLayerType; }
@@ -271,6 +278,7 @@ protected:
     BlendMode mBlendMode = BlendMode::Normal;
     qreal mOpacity = 1.0;
     QColor mTintColor;
+    QString mComment;
     bool mVisible = true;
     Map *mMap = nullptr;
     GroupLayer *mParentLayer = nullptr;

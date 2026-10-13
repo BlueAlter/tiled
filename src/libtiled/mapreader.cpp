@@ -878,6 +878,10 @@ static void readLayerAttributes(Layer &layer,
     if (!tintColor.isEmpty())
         layer.setTintColor(QColor(tintColor.toString()));
 
+    const QString comment = atts.value(QLatin1String("comment")).toString();
+    if (!comment.isEmpty())
+        layer.setComment(comment);
+
     if (const int visible = atts.value(QLatin1String("visible")).toInt(&ok); ok)
         layer.setVisible(visible);
 
@@ -1245,6 +1249,12 @@ std::unique_ptr<MapObject> MapReaderPrivate::readObject()
     if (ok) {
         object->setVisible(visible);
         object->setPropertyChanged(MapObject::VisibleProperty);
+    }
+
+    const QString comment = atts.value(QLatin1String("comment")).toString();
+    if (!comment.isEmpty()) {
+        object->setComment(comment);
+        object->setPropertyChanged(MapObject::CommentProperty);
     }
 
     while (xml.readNextStartElement()) {

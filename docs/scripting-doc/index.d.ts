@@ -1801,6 +1801,15 @@ declare class MapObject extends TiledObject {
   textColor: color;
 
   /**
+   * Arbitrary string used to store notes about this object, such as a
+   * description of what it is used for. It is not used by Tiled itself,
+   * but is available to other tools reading the map.
+   *
+   * @since 1.13
+   */
+  comment: string;
+
+  /**
    * Tile of the object.
    */
   tile: Tile | null;
@@ -3092,6 +3101,14 @@ declare class Layer extends TiledObject {
    * layers, tile objects and image layers.
    */
   blendMode: BlendMode;
+
+  /**
+   * Arbitrary string used to store notes about this layer. It is not used
+   * by Tiled itself, but is available to other tools reading the map.
+   *
+   * @since 1.13
+   */
+  comment: string;
 
   /**
    * Map that this layer is part of, or `null` in case of a standalone layer.

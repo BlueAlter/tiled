@@ -600,6 +600,9 @@ QVariant MapToVariantConverter::toVariant(const MapObject &object) const
     if (notTemplateInstance || object.propertyChanged(MapObject::VisibleProperty))
         objectVariant[QStringLiteral("visible")] = object.isVisible();
 
+    if (!object.comment().isEmpty() && (notTemplateInstance || object.propertyChanged(MapObject::CommentProperty)))
+        objectVariant[QStringLiteral("comment")] = object.comment();
+
     /* Polygons are stored in this format:
      *
      *   "polygon/polyline": [
@@ -802,6 +805,9 @@ void MapToVariantConverter::addLayerAttributes(QVariantMap &layerVariant,
 
     if (layer.tintColor().isValid())
         layerVariant[QStringLiteral("tintcolor")] = colorToString(layer.tintColor());
+
+    if (!layer.comment().isEmpty())
+        layerVariant[QStringLiteral("comment")] = layer.comment();
 
     if (layer.blendMode() != BlendMode::Normal)
         layerVariant[QStringLiteral("mode")] = blendModeToString(layer.blendMode());

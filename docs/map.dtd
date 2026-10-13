@@ -104,6 +104,7 @@
   y           CDATA   #IMPLIED
   opacity     CDATA   #IMPLIED
   visible     (0 | 1) #IMPLIED
+  comment     CDATA   #IMPLIED
 >
 
 <!ELEMENT objectgroup (properties?, object*)>
@@ -115,6 +116,7 @@
   y           CDATA   #IMPLIED
   opacity     CDATA   #IMPLIED
   visible     (0 | 1) #IMPLIED
+  comment     CDATA   #IMPLIED
 >
 
 <!ELEMENT object (properties?)>
@@ -126,4 +128,5 @@
   width       CDATA   #IMPLIED
   height      CDATA   #IMPLIED
   gid         CDATA   #IMPLIED
+  comment     CDATA   #IMPLIED
 >

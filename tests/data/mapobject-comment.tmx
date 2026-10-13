@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.13.0" orientation="orthogonal" renderorder="right-down" width="4" height="3" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="4">
+ <objectgroup id="1" name="Items" comment="Spawn points for the whole level">
+  <object id="1" name="Common crate" type="item" x="32" y="32" width="16" height="16" comment="Common loot, respawns every 5 minutes"/>
+  <object id="2" name="Epic chest" type="item" x="64" y="32" width="16" height="16" comment="Opens the second quest stage"/>
+  <object id="3" name="Plain point" type="marker" x="96" y="32"/>
+ </objectgroup>
+ <group id="2" name="Decor" comment="Purely visual">
+  <objectgroup id="3" name="Details">
+   <object id="4" name="Uncommented layer child" x="32" y="64"/>
+  </objectgroup>
+ </group>
+</map>

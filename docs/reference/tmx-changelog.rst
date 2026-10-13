@@ -4,6 +4,13 @@ TMX Changelog
 Below are described the changes/additions that were made to the
 :doc:`tmx-map-format` for recent versions of Tiled.
 
+Tiled 1.13
+----------
+
+-  Added ``comment`` attribute to :ref:`tmx-layer` and :ref:`tmx-object` to
+   store notes or documentation. Tiled does not use this information itself,
+   but it is available to other tools reading the map.
+
 Tiled 1.12
 ----------
 

@@ -87,6 +87,7 @@ Layer
 
     chunks,           array,            "Array of :ref:`chunks <json-chunk>` (optional). ``tilelayer`` only."
     class,            string,           "The class of the layer (since 1.9, optional)"
+    comment,          string,           "Arbitrary string used to store notes about the layer, ignored by Tiled itself (optional, since 1.13)"
     compression,      string,           "``zlib``, ``gzip``, ``zstd`` (since 1.3) or empty (default). ``tilelayer`` only."
     data,             array or string,  "Array of ``unsigned int`` (GIDs) or base64-encoded data. ``tilelayer`` only."
     draworder,        string,           "``topdown`` (default) or ``index``. ``objectgroup`` only."
@@ -236,6 +237,7 @@ Object
     :widths: 1, 1, 4
 
     capsule,          bool,             "Used to mark an object as a capsule"
+    comment,          string,           "Arbitrary string used to store notes about the object, ignored by Tiled itself (optional, since 1.13)"
     ellipse,          bool,             "Used to mark an object as an ellipse"
     gid,              int,              "Global tile ID, only if object represents a tile"
     height,           double,           "Height in pixels."
@@ -807,6 +809,13 @@ A point on a polygon or a polyline, relative to the position of the object.
 
 Changelog
 ---------
+
+Tiled 1.13
+~~~~~~~~~~
+
+* Added ``comment`` property to :ref:`json-object` and :ref:`json-layer`. Tiled
+  does not use this information itself, but it is available to other tools
+  reading the map.
 
 Tiled 1.12
 ~~~~~~~~~~
