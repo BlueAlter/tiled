@@ -57,11 +57,17 @@ public:
     Properties properties() const;
     void setProperties(const Properties &properties);
 
+
     bool hasListValues() const;
     void setListValues(const QVariantList &values);
     QVariantList listValues() const;
 
+    bool hasFullLayers() const;
+
     bool copySelection(const MapDocument &mapDocument);
+
+    bool copyLayers(const MapDocument &mapDocument);
+    void pasteLayers(MapDocument *mapDocument);
 
     enum PasteFlag {
         PasteDefault        = 0x0,
@@ -80,6 +86,7 @@ signals:
     void hasMapChanged();
     void hasPropertiesChanged();
     void hasValuesChanged();
+    void hasFullLayersChanged();
 
 private:
     void update();
@@ -88,6 +95,7 @@ private:
     bool mHasMap = false;
     bool mHasProperties = false;
     bool mHasListValues = false;
+    bool mHasFullLayers = false;
 };
 
 /**
@@ -112,6 +120,11 @@ inline bool ClipboardManager::hasProperties() const
 inline bool ClipboardManager::hasListValues() const
 {
     return mHasListValues;
+}
+
+inline bool ClipboardManager::hasFullLayers() const
+{
+    return mHasFullLayers;
 }
 
 } // namespace Tiled
