@@ -119,7 +119,7 @@ void test_MapReader::roundTripJsonCellBasedWangSet()
     QVERIFY(tileset.data());
 
     MapToVariantConverter toVariant;
-    const QVariant tsVariant = toVariant.toVariant(*tileset);
+    const QVariant tsVariant = toVariant.toVariant(*tileset, QDir(QStringLiteral("../wangtiles")));
     const QVariantMap tsMap = tsVariant.toMap();
     const QVariantList wsList = tsMap.value(QStringLiteral("wangsets")).toList();
     QCOMPARE(wsList.size(), 1);
@@ -145,7 +145,7 @@ void test_MapReader::roundTripJsonCellBasedWangSet()
     QVERIFY(foundCenter2);
 
     VariantToMapConverter toMap;
-    auto jsonTileset = toMap.toTileset(tsVariant);
+    auto jsonTileset = toMap.toTileset(tsVariant, QDir(QStringLiteral("../wangtiles")));
     QVERIFY(jsonTileset.data());
     QCOMPARE(jsonTileset->wangSetCount(), 1);
     WangSet *jsonWs = jsonTileset->wangSet(0);
@@ -177,7 +177,7 @@ void test_MapReader::classicWangSetSerializationIdentical()
 
     // JSON serialization should never contain cellbased or center
     MapToVariantConverter toVariant;
-    const QVariant tsVariant = toVariant.toVariant(*classicTileset);
+    const QVariant tsVariant = toVariant.toVariant(*classicTileset, QDir(QStringLiteral("../wangtiles")));
     const QVariantMap tsMap = tsVariant.toMap();
     const QVariantList wsList = tsMap.value(QStringLiteral("wangsets")).toList();
     QCOMPARE(wsList.size(), 1);
