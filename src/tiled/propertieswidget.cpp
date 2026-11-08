@@ -226,9 +226,9 @@ template<> EnumData enumData<ObjectGroup::DrawOrder>()
 template<> EnumData enumData<WangSet::Type>()
 {
     const QStringList names {
-        QCoreApplication::translate("WangSet", "Corner"),
-        QCoreApplication::translate("WangSet", "Edge"),
-        QCoreApplication::translate("WangSet", "Mixed"),
+        QCoreApplication::translate("WangSet", "Match Corners"),
+        QCoreApplication::translate("WangSet", "Match Sides"),
+        QCoreApplication::translate("WangSet", "Match Corners and Sides"),
     };
 
     QMap<int, QIcon> icons;
@@ -2166,14 +2166,24 @@ public:
                     });
 
         mTypeProperty = new EnumProperty<WangSet::Type>(
-                    tr("Type"),
+                    tr("Mode"),
                     [this] { return wangSet()->type(); },
                     [this](WangSet::Type value) {
                         push(new ChangeWangSetType(tilesetDocument(), wangSet(), value));
                     });
 
+        mCellBasedProperty = new BoolProperty(
+                    tr("Center Cell (Godot)"),
+                    [this] { return wangSet()->isCellBased(); },
+                    [this](bool value) {
+                        push(new ChangeWangSetCellBased(tilesetDocument(),
+                                                        wangSet(),
+                                                        value));
+                    });
+        mCellBasedProperty->setToolTip(tr("Enable center cell per tile (like Godot's terrain system)."));
+
         mColorCountProperty = new IntProperty(
-                    tr("Color Count"),
+                    tr("Terrain Count"),
                     [this] { return wangSet()->colorCount(); },
                     [this](const int &value) {
                         push(new ChangeWangSetColorCount(tilesetDocument(),
@@ -2187,6 +2197,7 @@ public:
         mWangSetProperties->addProperty(mClassProperty);
         mWangSetProperties->addSeparator();
         mWangSetProperties->addProperty(mTypeProperty);
+        mWangSetProperties->addProperty(mCellBasedProperty);
         mWangSetProperties->addProperty(mColorCountProperty);
 
         addProperty(mWangSetProperties);
@@ -2219,6 +2230,9 @@ private:
         case WangSetChangeEvent::ColorCountProperty:
             emit mColorCountProperty->valueChanged();
             break;
+        case WangSetChangeEvent::CellBasedProperty:
+            emit mCellBasedProperty->valueChanged();
+            break;
         }
     }
 
@@ -2227,6 +2241,7 @@ private:
         const bool hasTilesetDocument = tilesetDocument();
         mNameProperty->setEnabled(hasTilesetDocument);
         mTypeProperty->setEnabled(hasTilesetDocument);
+        mCellBasedProperty->setEnabled(hasTilesetDocument);
         mColorCountProperty->setEnabled(hasTilesetDocument);
     }
 
@@ -2243,6 +2258,7 @@ private:
     GroupProperty *mWangSetProperties;
     Property *mNameProperty;
     Property *mTypeProperty;
+    BoolProperty *mCellBasedProperty;
     IntProperty *mColorCountProperty;
 };
 

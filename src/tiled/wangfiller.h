@@ -50,8 +50,13 @@ public:
         WangId desired = WangId::FULL_MASK;
         WangId mask;
 
+        // The desired center terrain color, or -1 when the center is not
+        // constrained. Only used by cell-based terrain sets.
+        int desiredCenter = -1;
+
         bool operator==(const CellInfo &other) const {
-            return desired == other.desired && mask == other.mask;
+            return desired == other.desired && mask == other.mask &&
+                    desiredCenter == other.desiredCenter;
         }
     };
 

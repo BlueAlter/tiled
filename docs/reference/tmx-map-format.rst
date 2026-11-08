@@ -359,7 +359,9 @@ Defines a list of colors and any number of Wang tiles using these colors.
 
 -  **name:** The name of the Wang set.
 -  **class:** The class of the Wang set (since 1.9, defaults to "").
+-  **type:** The type of the Wang set (``corner``, ``edge`` or ``mixed``).
 -  **tile:** The tile ID of the tile representing this Wang set.
+-  **cellbased:** Whether this Wang set is cell-based (since 1.13, 0 or 1, defaults to 0).
 
 Can contain at most one: :ref:`tmx-properties`
 
@@ -399,6 +401,8 @@ associating it with a certain Wang ID.
    Tiled 1.5, the Wang ID was saved as a 32-bit unsigned integer stored in the
    format ``0xCECECECE`` (where each C is a corner color and each E is an edge
    color, in reverse order).
+-  **center:** The index of the center terrain color in cell-based Wang sets
+   (since 1.13, optional, defaults to 0 meaning unset).
 -  *hflip:* Whether the tile is flipped horizontally (removed in Tiled 1.5).
 -  *vflip:* Whether the tile is flipped vertically (removed in Tiled 1.5).
 -  *dflip:* Whether the tile is flipped on its diagonal (removed in Tiled 1.5).

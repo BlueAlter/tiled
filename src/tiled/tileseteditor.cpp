@@ -1018,8 +1018,9 @@ void TilesetEditor::addWangSet(WangSet::Type type)
         return;
 
     auto *wangSet = new WangSet(tileset, QString(), type);
-    wangSet->setName(tr("Unnamed Set"));
+    wangSet->setName(tr("Terrain Set %1").arg(tileset->wangSetCount()));
     wangSet->setColorCount(1);
+    wangSet->setCellBased(true);
 
     mCurrentTilesetDocument->undoStack()->push(new AddWangSet(mCurrentTilesetDocument,
                                                               wangSet));

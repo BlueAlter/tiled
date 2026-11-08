@@ -65,7 +65,17 @@ WangFiller::CellInfo &WangFiller::changePosition(QPoint pos)
     // Initialize the desired WangId when necessary, and make sure the location
     // is part of the to be processed region.
     if (info == CellInfo()) {
-        info.desired = mWangSet.wangIdOfCell(mBack.cellAt(pos));
+        const Cell &backCell = mBack.cellAt(pos);
+        info.desired = mWangSet.wangIdOfCell(backCell);
+
+        // Preserve the center terrain of existing tiles. For empty tiles the
+        // center stays unconstrained, unless the brush explicitly sets it.
+        if (mWangSet.isCellBased() && !backCell.isEmpty()) {
+            const int center = mWangSet.centerColorOfCell(backCell);
+            if (center > 0)
+                info.desiredCenter = center;
+        }
+
         mFillRegion.region += QRect(pos, pos);
     }
 
@@ -383,9 +393,17 @@ bool WangFiller::findBestMatch(const TileLayer &target,
     RandomPicker<Cell> matches;
     int lowestPenalty = INT_MAX;
 
-    auto processCandidate = [&] (WangId wangId, const Cell &cell) {
-        if ((wangId & info.mask) != maskedWangId)
-            return;
+    auto processCandidate = [&] (WangId wangId, const Cell &cell, int centerColor) {
+        if (mWangSet.isCellBased()) {
+            if (info.desiredCenter >= 0 && centerColor != info.desiredCenter)
+                return;
+        } else {
+            if ((wangId & info.mask) != maskedWangId)
+                return;
+
+            if (info.desiredCenter >= 0 && centerColor != info.desiredCenter)
+                return;
+        }
 
         int totalPenalty = 0;
 
@@ -402,14 +420,14 @@ bool WangFiller::findBestMatch(const TileLayer &target,
 
             // If there is no path to the desired color, this isn't a useful transition
             if (penalty < 0) {
-                if (mCorrectionsEnabled) {
+                if (mCorrectionsEnabled && !mWangSet.isCellBased()) {
                     // When we're doing corrections, we'd rather not choose
                     // this candidate at all because it's impossible to
                     // transition to the desired color.
                     return;
                 }
 
-                penalty = mWangSet.maximumColorDistance() + 1;
+                penalty = mWangSet.maximumColorDistance() + 2;
             }
 
             totalPenalty += penalty;
@@ -432,10 +450,10 @@ bool WangFiller::findBestMatch(const TileLayer &target,
 
     const auto &wangIdsAndCells = mWangSet.wangIdsAndCells();
     for (const auto &wangIdAndCell : wangIdsAndCells)
-        processCandidate(wangIdAndCell.wangId, wangIdAndCell.cell);
+        processCandidate(wangIdAndCell.wangId, wangIdAndCell.cell, wangIdAndCell.centerColor);
 
     if (mErasingEnabled)
-        processCandidate(WangId(), Cell());
+        processCandidate(WangId(), Cell(), 0);
 
     // Choose a candidate at random, with consideration for probability
     while (!matches.isEmpty()) {
@@ -445,7 +463,7 @@ bool WangFiller::findBestMatch(const TileLayer &target,
         // candidate. This can be a relatively expensive check, that we'll only
         // do when we're not making corrections and when the WangSet is not
         // complete.
-        if (!mCorrectionsEnabled && !mWangSet.isComplete()) {
+        if (!mCorrectionsEnabled && !mWangSet.isComplete() && !mWangSet.isCellBased()) {
             const WangId resultWangId = mWangSet.wangIdOfCell(result);
             bool discard = false;
 

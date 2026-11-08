@@ -94,7 +94,18 @@ public:
 
     void setWangColor(int color);
 
+    enum WangBehavior {
+        AssignWholeId,      // Assigning templates
+        AssignHoveredIndex, // Assigning color to hovered index
+    };
+
     QModelIndex hoveredIndex() const { return mHoveredIndex; }
+    int hoverGridX() const { return mHoverGridX; }
+    int hoverGridY() const { return mHoverGridY; }
+    bool isHoveringCenter() const { return mHoverGridX == 1 && mHoverGridY == 1; }
+    bool isErasing() const { return mErasingWithRightButton || (mWangColorIndex == 0); }
+    int currentWangColorIndex() const { return mWangColorIndex; }
+    WangBehavior currentWangBehavior() const { return mWangBehavior; }
 
     QIcon imageMissingIcon() const;
 
@@ -123,6 +134,9 @@ private:
 
     void selectWangSetImage();
     void selectWangColorImage();
+    void assignCenterColor(Tile *tile, int color);
+    void assignCellColor(Tile *tile, int gridX, int gridY, int color);
+    void fillTileWithTerrain(Tile *tile, int color);
     void editTileProperties();
     void swapTiles();
     void setDrawGrid(bool drawGrid);
@@ -133,11 +147,6 @@ private:
     void applyWangId();
     void finishWangIdChange();
     Tile *currentTile() const;
-
-    enum WangBehavior {
-        AssignWholeId,      // Assigning templates
-        AssignHoveredIndex, // Assigning color to hovered index
-    };
 
     enum WrapBehavior {
         WrapDefault,
@@ -156,6 +165,10 @@ private:
     WangSet *mWangSet = nullptr;
     WangId mWangId;
     int mWangColorIndex = 0;
+    bool mHoveringCenter = false;
+    int mHoverGridX = -1;
+    int mHoverGridY = -1;
+    bool mErasingWithRightButton = false;
     QModelIndex mHoveredIndex;
     bool mWangIdChanged = false;
 

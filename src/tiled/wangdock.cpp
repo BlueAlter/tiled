@@ -51,7 +51,9 @@
 #include <QToolButton>
 #include <QMenu>
 #include <QPainter>
+#include <QPixmap>
 #include <QScopedValueRollback>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QLabel>
 
@@ -165,17 +167,18 @@ WangDock::WangDock(QWidget *parent)
     connect(mWangSetProxyModel, &QAbstractItemModel::rowsInserted,
             this, &WangDock::expandRows);
 
+    mNewWangSetMenu->addAction(mAddMixedWangSet);
     mNewWangSetMenu->addAction(mAddCornerWangSet);
     mNewWangSetMenu->addAction(mAddEdgeWangSet);
-    mNewWangSetMenu->addAction(mAddMixedWangSet);
 
-    mNewWangSetButton->setPopupMode(QToolButton::InstantPopup);
+    mNewWangSetButton->setPopupMode(QToolButton::MenuButtonPopup);
+    mNewWangSetButton->setDefaultAction(mAddMixedWangSet);
     mNewWangSetButton->setMenu(mNewWangSetMenu);
     mNewWangSetButton->setIcon(QIcon(QStringLiteral(":/images/22/add.png")));
 
+    mAddMixedWangSet->setIcon(wangSetIcon(WangSet::Mixed));
     mAddCornerWangSet->setIcon(wangSetIcon(WangSet::Corner));
     mAddEdgeWangSet->setIcon(wangSetIcon(WangSet::Edge));
-    mAddMixedWangSet->setIcon(wangSetIcon(WangSet::Mixed));
 
     mDuplicateWangSet->setIcon(QIcon(QStringLiteral(":/images/16/stock-duplicate-16.png")));
     mDuplicateWangSet->setEnabled(false);
@@ -261,6 +264,7 @@ WangDock::WangDock(QWidget *parent)
     colorViewHorizontal->addWidget(mWangColorToolBar);
 
     mWangColorWidget = new QWidget;
+
     QVBoxLayout *colorViewVertical = new QVBoxLayout(mWangColorWidget);
     colorViewVertical->setContentsMargins(0, 0, 0, 0);
     colorViewVertical->addWidget(mWangColorView);
@@ -455,6 +459,11 @@ void WangDock::refreshCurrentWangColor()
     mEraseWangIdsButton->setChecked(color == 0);
     mRemoveColor->setEnabled(color != 0);
     emit wangColorChanged(color);
+
+    if (mCurrentCenterColor != color) {
+        mCurrentCenterColor = color;
+        emit centerColorChanged(color);
+    }
 }
 
 void WangDock::wangColorIndexPressed(const QModelIndex &index)
@@ -484,8 +493,13 @@ void WangDock::documentChanged(const ChangeEvent &change)
         }
         break;
     case ChangeEvent::WangSetChanged:
-        if (static_cast<const WangSetChangeEvent&>(change).property == WangSetChangeEvent::TypeProperty)
+        switch (static_cast<const WangSetChangeEvent&>(change).property) {
+        case WangSetChangeEvent::TypeProperty:
             mWangTemplateModel->wangSetChanged();
+            break;
+        default:
+            break;
+        }
         break;
     default:
         break;
@@ -619,6 +633,12 @@ void WangDock::setCurrentWangSet(WangSet *wangSet)
 
     mDuplicateWangSet->setEnabled(wangSet);
     mRemoveWangSet->setEnabled(wangSet);
+
+    const int color = currentWangColor();
+    if (mCurrentCenterColor != color) {
+        mCurrentCenterColor = color;
+        emit centerColorChanged(color);
+    }
 }
 
 void WangDock::activateErase()
@@ -645,10 +665,10 @@ void WangDock::retranslateUi()
     setWindowTitle(tr("Terrain Sets"));
 
     mEraseWangIdsButton->setText(tr("Erase Terrain"));
-    mNewWangSetButton->setToolTip(tr("Add Terrain Set"));
-    mAddCornerWangSet->setText(tr("New Corner Set"));
-    mAddEdgeWangSet->setText(tr("New Edge Set"));
-    mAddMixedWangSet->setText(tr("New Mixed Set"));
+    mNewWangSetButton->setToolTip(tr("Add Terrain Set (Match Corners and Sides)"));
+    mAddMixedWangSet->setText(tr("Match Corners and Sides (Default)"));
+    mAddCornerWangSet->setText(tr("Match Corners"));
+    mAddEdgeWangSet->setText(tr("Match Sides"));
     mDuplicateWangSet->setText(tr("Duplicate Terrain Set"));
     mRemoveWangSet->setText(tr("Remove Terrain Set"));
     mAddColor->setText(tr("Add Terrain"));

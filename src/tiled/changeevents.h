@@ -284,6 +284,7 @@ public:
         TypeProperty,
         ImageProperty,
         ColorCountProperty,
+        CellBasedProperty,
     };
 
     WangSetChangeEvent(WangSet *wangSet, WangSetProperty property)

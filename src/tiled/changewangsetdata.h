@@ -70,6 +70,24 @@ private:
     const WangSet::Type mNewType;
 };
 
+class ChangeWangSetCellBased : public QUndoCommand
+{
+public:
+    ChangeWangSetCellBased(TilesetDocument *tilesetDocument,
+                           WangSet *wangSet,
+                           bool cellBased,
+                           QUndoCommand *parent = nullptr);
+
+    void undo() override;
+    void redo() override;
+
+private:
+    TilesetDocument *mTilesetDocument;
+    WangSet *mWangSet;
+    const bool mOldCellBased;
+    const bool mNewCellBased;
+};
+
 class ChangeWangSetColorCount : public QUndoCommand
 {
 public:

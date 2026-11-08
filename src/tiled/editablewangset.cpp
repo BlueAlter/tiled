@@ -110,6 +110,35 @@ void EditableWangSet::setWangId(EditableTile *editableTile, QJSValue value)
         wangSet()->setWangId(editableTile->id(), wangId);
 }
 
+int EditableWangSet::centerColor(EditableTile *editableTile) const
+{
+    if (!editableTile) {
+        ScriptManager::instance().throwNullArgError(0);
+        return 0;
+    }
+    return wangSet()->centerColor(editableTile->id());
+}
+
+void EditableWangSet::setCenterColor(EditableTile *editableTile, int color)
+{
+    if (!editableTile) {
+        ScriptManager::instance().throwNullArgError(0);
+        return;
+    }
+
+    if (color < 0 || color > colorCount()) {
+        ScriptManager::instance().throwError(QCoreApplication::translate("Script Errors", "Color index out of range"));
+        return;
+    }
+
+    if (auto doc = tilesetDocument()) {
+        WangId currentWangId = wangSet()->wangIdOfTile(editableTile->tile());
+        asset()->push(new ChangeTileWangId(doc, wangSet(), editableTile->tile(), currentWangId, color));
+    } else if (!checkReadOnly()) {
+        wangSet()->setCenterColor(editableTile->id(), color);
+    }
+}
+
 QString EditableWangSet::colorName(int colorIndex) const
 {
     if (colorIndex <= 0 || colorIndex > colorCount()) {
@@ -148,6 +177,14 @@ void EditableWangSet::setType(EditableWangSet::Type type)
     } else if (!checkReadOnly()) {
         wangSet()->setType(static_cast<WangSet::Type>(type));
     }
+}
+
+void EditableWangSet::setCellBased(bool cellBased)
+{
+    if (auto document = tilesetDocument())
+        asset()->push(new ChangeWangSetCellBased(document, wangSet(), cellBased));
+    else if (!checkReadOnly())
+        wangSet()->setCellBased(cellBased);
 }
 
 void EditableWangSet::setImageTile(EditableTile *imageTile)

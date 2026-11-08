@@ -477,6 +477,8 @@ void MapWriterPrivate::writeTileset(QXmlStreamWriter &w, const Tileset &tileset,
                 w.writeAttribute(QStringLiteral("class"), ws->className());
             w.writeAttribute(QStringLiteral("type"), wangSetTypeToString(ws->type()));
             w.writeAttribute(QStringLiteral("tile"), QString::number(ws->imageTileId()));
+            if (ws->isCellBased())
+                w.writeAttribute(QStringLiteral("cellbased"), QStringLiteral("1"));
 
             for (int i = 1; i <= ws->colorCount(); ++i) {
                 if (const WangColor *wc = ws->colorAt(i).data()) {
@@ -500,6 +502,8 @@ void MapWriterPrivate::writeTileset(QXmlStreamWriter &w, const Tileset &tileset,
                 w.writeStartElement(QStringLiteral("wangtile"));
                 w.writeAttribute(QStringLiteral("tileid"), QString::number(wangTile.tileId()));
                 w.writeAttribute(QStringLiteral("wangid"), wangTile.wangId().toString());
+                if (ws->isCellBased() && wangTile.centerColor() > 0)
+                    w.writeAttribute(QStringLiteral("center"), QString::number(wangTile.centerColor()));
                 w.writeEndElement(); // </wangtile>
             }
 

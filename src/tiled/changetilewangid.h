@@ -33,10 +33,12 @@ class ChangeTileWangId : public QUndoCommand
 {
 public:
     struct WangIdChange {
-        WangIdChange(WangId from, WangId to, int tileId)
+        WangIdChange(WangId from, WangId to, int tileId, int centerFrom = 0, int centerTo = 0)
             : from(from)
             , to(to)
             , tileId(tileId)
+            , centerFrom(centerFrom)
+            , centerTo(centerTo)
         {}
 
         WangIdChange()
@@ -45,6 +47,8 @@ public:
         WangId from;
         WangId to;
         int tileId = 0;
+        int centerFrom = 0;
+        int centerTo = 0;
     };
 
     ChangeTileWangId();
@@ -52,7 +56,8 @@ public:
     ChangeTileWangId(TilesetDocument *tilesetDocument,
                      WangSet *wangSet,
                      Tile *tile,
-                     WangId wangId);
+                     WangId wangId,
+                     int centerColor = -1);
 
     ChangeTileWangId(TilesetDocument *tilesetDocument,
                      WangSet *wangSet,

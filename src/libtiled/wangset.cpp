@@ -369,7 +369,10 @@ QDebug operator<<(QDebug debug, WangId wangId)
 QDebug operator<<(QDebug debug, const WangTile &wangTile)
 {
     QDebugStateSaver state(debug);
-    debug.nospace() << "WangTile(" << wangTile.tileId() << ", " << wangTile.wangId() << ')';
+    debug.nospace() << "WangTile(" << wangTile.tileId() << ", " << wangTile.wangId();
+    if (wangTile.centerColor() > 0)
+        debug << ", center: " << wangTile.centerColor();
+    debug << ')';
     return debug;
 }
 
@@ -451,6 +454,36 @@ void WangSet::setType(Type type)
     mCellsDirty = true;
 }
 
+void WangSet::setCellBased(bool cellBased)
+{
+    if (mCellBased == cellBased)
+        return;
+
+    mCellBased = cellBased;
+    mColorDistancesDirty = true;
+    mCellsDirty = true;
+}
+
+void WangSet::setCenterColor(int tileId, int color)
+{
+    Q_ASSERT(color >= 0 && color <= colorCount());
+
+    if (mTileIdToCenterColor.value(tileId, 0) == color)
+        return;
+
+    if (color == 0) {
+        mTileIdToCenterColor.remove(tileId);
+        if (mCellBased && mTileIdToWangId.value(tileId).isEmpty())
+            mTileIdToWangId.remove(tileId);
+    } else {
+        mTileIdToCenterColor.insert(tileId, color);
+        if (mCellBased && !mTileIdToWangId.contains(tileId))
+            mTileIdToWangId.insert(tileId, WangId());
+    }
+
+    mCellsDirty = true;
+}
+
 /**
  * Sets the color count.
  *
@@ -466,6 +499,20 @@ void WangSet::setColorCount(int n)
 
     if (n < colorCount()) {
         mColors.resize(n);
+        if (mCellBased && !mTileIdToCenterColor.isEmpty()) {
+            auto it = mTileIdToCenterColor.begin();
+            while (it != mTileIdToCenterColor.end()) {
+                if (it.value() > n) {
+                    const int tileId = it.key();
+                    it = mTileIdToCenterColor.erase(it);
+                    if (mTileIdToWangId.value(tileId).isEmpty())
+                        mTileIdToWangId.remove(tileId);
+                } else {
+                    ++it;
+                }
+            }
+            mCellsDirty = true;
+        }
     } else {
         while (mColors.size() < n) {
             QColor color;
@@ -497,6 +544,15 @@ void WangSet::insertWangColor(const QSharedPointer<WangColor> &wangColor)
     for (int i = wangColor->colorIndex(); i < colorCount(); ++i)
         mColors.at(i)->setColorIndex(i + 1);
 
+    if (mCellBased && !mTileIdToCenterColor.isEmpty()) {
+        const int insertedColor = wangColor->colorIndex();
+        for (auto it = mTileIdToCenterColor.begin(); it != mTileIdToCenterColor.end(); ++it) {
+            if (it.value() >= insertedColor)
+                it.value() += 1;
+        }
+        mCellsDirty = true;
+    }
+
     mColorDistancesDirty = true;
 }
 
@@ -526,6 +582,23 @@ QSharedPointer<WangColor> WangSet::takeWangColorAt(int color)
     for (int i = color - 1; i < colorCount(); ++i)
         mColors.at(i)->setColorIndex(i + 1);
 
+    if (mCellBased && !mTileIdToCenterColor.isEmpty()) {
+        auto it = mTileIdToCenterColor.begin();
+        while (it != mTileIdToCenterColor.end()) {
+            if (it.value() == color) {
+                const int tileId = it.key();
+                it = mTileIdToCenterColor.erase(it);
+                if (mTileIdToWangId.value(tileId).isEmpty())
+                    mTileIdToWangId.remove(tileId);
+            } else {
+                if (it.value() > color)
+                    it.value() -= 1;
+                ++it;
+            }
+        }
+        mCellsDirty = true;
+    }
+
     mColorDistancesDirty = true;
     return wangColor;
 }
@@ -541,16 +614,30 @@ void WangSet::setWangId(int tileId, WangId wangId)
 {
     Q_ASSERT(wangIdIsValid(wangId));
 
-    if (WangId previousWangId = mTileIdToWangId.value(tileId)) {
-        // return when the same tile is already part of this set with the same WangId
-        if (previousWangId == wangId)
+    if (mTileIdToWangId.contains(tileId)) {
+        if (mTileIdToWangId.value(tileId) == wangId)
             return;
 
-        removeTileId(tileId);
+        if (wangId.isEmpty()) {
+            if (mCellBased && centerColor(tileId) != 0) {
+                mTileIdToWangId.insert(tileId, WangId());
+                mColorDistancesDirty = true;
+                mCellsDirty = true;
+                return;
+            }
+            removeTileId(tileId);
+            return;
+        }
     }
 
-    if (wangId.isEmpty())
+    if (wangId.isEmpty()) {
+        if (mCellBased && centerColor(tileId) != 0) {
+            mTileIdToWangId.insert(tileId, WangId());
+            mColorDistancesDirty = true;
+            mCellsDirty = true;
+        }
         return;
+    }
 
     mTileIdToWangId.insert(tileId, wangId);
     mColorDistancesDirty = true;
@@ -560,6 +647,7 @@ void WangSet::setWangId(int tileId, WangId wangId)
 void WangSet::removeTileId(int tileId)
 {
     mTileIdToWangId.remove(tileId);
+    mTileIdToCenterColor.remove(tileId);
     mColorDistancesDirty = true;
     mCellsDirty = true;
 }
@@ -587,15 +675,46 @@ void WangSet::recalculateCells()
     QSet<WangId> addedWangIds;
 
     // First insert all available tiles
+    QSet<int> processedTileIds;
+
     QHashIterator<int, WangId> it(mTileIdToWangId);
     while (it.hasNext()) {
         it.next();
 
+        const int tileId = it.key();
+        processedTileIds.insert(tileId);
+
+        if (!mCellBased && it.value().isEmpty())
+            continue;
+
         const auto wangId = WangId(it.value() & mask);
+        const int center = mCellBased ? mTileIdToCenterColor.value(tileId, 0) : 0;
+
+        if (mCellBased && it.value().isEmpty() && center == 0)
+            continue;
 
         mUniqueFullWangIdCount += !wangId.hasWildCards() && !addedWangIds.contains(wangId);
         addedWangIds.insert(wangId);
-        mWangIdAndCells.append({wangId, Cell(mTileset, it.key())});
+        mWangIdAndCells.append({wangId, Cell(mTileset, tileId), center});
+    }
+
+    if (mCellBased) {
+        QHashIterator<int, int> centerIt(mTileIdToCenterColor);
+        while (centerIt.hasNext()) {
+            centerIt.next();
+            const int tileId = centerIt.key();
+            if (processedTileIds.contains(tileId))
+                continue;
+
+            const int center = centerIt.value();
+            if (center == 0)
+                continue;
+
+            const WangId wangId = WangId();
+            mUniqueFullWangIdCount += !addedWangIds.contains(wangId);
+            addedWangIds.insert(wangId);
+            mWangIdAndCells.append({wangId, Cell(mTileset, tileId), center});
+        }
     }
 
     const auto transformationFlags = tileset()->transformationFlags();
@@ -609,7 +728,11 @@ void WangSet::recalculateCells()
     while (it.hasNext()) {
         it.next();
 
+        if (!mCellBased && it.value().isEmpty())
+            continue;
+
         const auto wangId = WangId(it.value() & mask);
+        const int center = mCellBased ? mTileIdToCenterColor.value(it.key(), 0) : 0;
 
         Cell cells[8] = { Cell(mTileset, it.key()) };
         WangId wangIds[8] = { wangId };
@@ -653,7 +776,7 @@ void WangSet::recalculateCells()
                 continue;
             mUniqueFullWangIdCount += !hasWildCards && !exists;
             addedWangIds.insert(wangIds[i]);
-            mWangIdAndCells.append({wangIds[i], cells[i]});
+            mWangIdAndCells.append({wangIds[i], cells[i], center});
         }
     }
 }
@@ -667,6 +790,20 @@ void WangSet::recalculateCells()
  */
 void WangSet::recalculateColorDistances()
 {
+    if (mCellBased) {
+        // Cell-based sets do not use the multi-step color-distance transition graph (DESIGN 4).
+        // Penalty is evaluated as the number of mismatching neighbor peering slots.
+        mMaximumColorDistance = 1;
+        for (int i = 1; i <= colorCount(); ++i) {
+            WangColor &color = *colorAt(i);
+            QVector<int> distance(colorCount() + 1, -1);
+            distance[i] = 0;
+            color.mDistanceToColor = distance;
+        }
+        mColorDistancesDirty = false;
+        return;
+    }
+
     int maximumDistance = 1;
 
     for (int i = 1; i <= colorCount(); ++i) {
@@ -757,7 +894,10 @@ QList<WangTile> WangSet::sortedWangTiles() const
     QHashIterator<int, WangId> it(mTileIdToWangId);
     while (it.hasNext()) {
         it.next();
-        wangTiles.append(WangTile(it.key(), it.value()));
+        if (!mCellBased && it.value().isEmpty())
+            continue;
+        const int center = mCellBased ? mTileIdToCenterColor.value(it.key(), 0) : 0;
+        wangTiles.append(WangTile(it.key(), it.value(), center));
     }
 
     std::stable_sort(wangTiles.begin(), wangTiles.end());
@@ -884,6 +1024,11 @@ int WangSet::maximumColorDistance() const
  */
 bool WangSet::isComplete() const
 {
+    // Cell-based sets do not rely on full combinatorial completeness (e.g. 47-tile blob
+    // rather than full millions of permutations). They rely on fallback matching instead.
+    if (mCellBased)
+        return false;
+
     if (cellsDirty())
         const_cast<WangSet*>(this)->recalculateCells();
 
@@ -896,15 +1041,27 @@ bool WangSet::isComplete() const
 quint64 WangSet::completeSetSize() const
 {
     auto c = static_cast<quint64>(colorCount());
+    if (c == 0)
+        return 0;
 
+    quint64 combinations = 0;
     switch (mType) {
     case Corner:
     case Edge:
-        return c * c * c * c;
+        combinations = c * c * c * c;
+        break;
     case Mixed:
     default:
-        return c * c * c * c * c * c * c * c;
+        combinations = c * c * c * c * c * c * c * c;
+        break;
     }
+
+    if (mCellBased) {
+        // In cell-based sets, each tile additionally has a center terrain (c choices).
+        return c * combinations;
+    }
+
+    return combinations;
 }
 
 WangSet::Type WangSet::effectiveTypeForColor(int color) const
@@ -993,6 +1150,9 @@ WangSet *WangSet::clone(Tileset *tileset) const
 
     c->setClassName(className());
     c->setProperties(properties());
+
+    c->mCellBased = mCellBased;
+    c->mTileIdToCenterColor = mTileIdToCenterColor;
 
     c->mUniqueFullWangIdCount = mUniqueFullWangIdCount;
     c->mColors = mColors;

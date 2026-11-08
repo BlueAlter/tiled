@@ -62,6 +62,7 @@ public:
     WangSet *currentWangSet() const { return mCurrentWangSet; }
     WangId currentWangId() const { return mCurrentWangId; }
     int currentWangColor() const;
+    int currentCenterColor() const { return mCurrentCenterColor; }
 
     void editWangSetName(WangSet *wangSet);
     void editWangColorName(int colorIndex);
@@ -83,6 +84,9 @@ signals:
     void selectWangBrush();
     // When the color view selection changes.
     void wangColorChanged(int color);
+
+    // When the center terrain selection changes.
+    void centerColorChanged(int color);
 
 public slots:
     void setCurrentWangSet(WangSet *wangSet);
@@ -137,6 +141,7 @@ private:
     WangSetModel *mWangSetModel;
     HasChildrenFilterModel *mWangSetProxyModel;
     QWidget *mWangColorWidget;
+    int mCurrentCenterColor = 0;
     WangTemplateView *mWangTemplateView;
     WangTemplateModel *mWangTemplateModel;
     QTabWidget *mTemplateAndColorView;

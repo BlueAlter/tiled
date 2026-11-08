@@ -15,6 +15,10 @@ Tiled 1.13
    to display the object. Objects without this attribute keep using the color
    of their :ref:`object layer <tmx-objectgroup>`.
 
+-  Added ``cellbased`` attribute to :ref:`tmx-wangset` to enable cell-based terrain sets.
+
+-  Added ``center`` attribute to :ref:`tmx-wangtile` to specify the center terrain color in cell-based Wang sets.
+
 Tiled 1.12
 ----------
 
