@@ -2180,6 +2180,8 @@ private:
         case WangSetChangeEvent::ColorCountProperty:
             emit mColorCountProperty->valueChanged();
             break;
+        case WangSetChangeEvent::CellBasedProperty:
+            break;
         }
     }
 

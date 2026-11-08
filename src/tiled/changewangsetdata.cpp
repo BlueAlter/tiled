@@ -87,6 +87,30 @@ void ChangeWangSetType::redo()
 }
 
 
+ChangeWangSetCellBased::ChangeWangSetCellBased(TilesetDocument *tilesetDocument,
+                                             WangSet *wangSet,
+                                             bool cellBased,
+                                             QUndoCommand *parent)
+    : QUndoCommand(parent)
+    , mTilesetDocument(tilesetDocument)
+    , mWangSet(wangSet)
+    , mOldCellBased(wangSet->isCellBased())
+    , mNewCellBased(cellBased)
+{
+    setText(QCoreApplication::translate("Undo Commands", "Change Terrain Set Mode"));
+}
+
+void ChangeWangSetCellBased::undo()
+{
+    mTilesetDocument->wangSetModel()->setWangSetCellBased(mWangSet, mOldCellBased);
+}
+
+void ChangeWangSetCellBased::redo()
+{
+    mTilesetDocument->wangSetModel()->setWangSetCellBased(mWangSet, mNewCellBased);
+}
+
+
 ChangeWangSetColorCount::ChangeWangSetColorCount(TilesetDocument *tilesetDocument,
                                                  WangSet *wangSet,
                                                  int newValue)

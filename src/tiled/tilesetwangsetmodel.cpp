@@ -170,6 +170,13 @@ void TilesetWangSetModel::setWangSetType(WangSet *wangSet, WangSet::Type type)
     emitToTilesetAndMaps(WangSetChangeEvent(wangSet, WangSetChangeEvent::TypeProperty));
 }
 
+void TilesetWangSetModel::setWangSetCellBased(WangSet *wangSet, bool cellBased)
+{
+    Q_ASSERT(wangSet->tileset() == mTilesetDocument->tileset().data());
+    wangSet->setCellBased(cellBased);
+    emitToTilesetAndMaps(WangSetChangeEvent(wangSet, WangSetChangeEvent::CellBasedProperty));
+}
+
 void TilesetWangSetModel::setWangSetColorCount(WangSet *wangSet, int value)
 {
     Q_ASSERT(wangSet->tileset() == mTilesetDocument->tileset().data());

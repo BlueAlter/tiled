@@ -38,14 +38,18 @@ ChangeTileWangId::ChangeTileWangId()
 ChangeTileWangId::ChangeTileWangId(TilesetDocument *tilesetDocument,
                                    WangSet *wangSet,
                                    Tile *tile,
-                                   WangId wangId)
+                                   WangId wangId,
+                                   int centerColor)
     : mTilesetDocument(tilesetDocument)
     , mWangSet(wangSet)
     , mMergeable(true)
 {
     Q_ASSERT(mWangSet);
     setText(QCoreApplication::translate("Undo Commands", "Change Tile Terrain"));
-    mChanges.append(WangIdChange(mWangSet->wangIdOfTile(tile), wangId, tile->id()));
+    const int currentCenter = mWangSet->centerColor(tile->id());
+    const int targetCenter = centerColor >= 0 ? centerColor : currentCenter;
+    mChanges.append(WangIdChange(mWangSet->wangIdOfTile(tile), wangId, tile->id(),
+                                 currentCenter, targetCenter));
 }
 
 ChangeTileWangId::ChangeTileWangId(TilesetDocument *tilesetDocument,
@@ -77,6 +81,8 @@ void ChangeTileWangId::undo()
         if (Tile *tile = findTile(wangIdChange.tileId))
             changedTiles.append(tile);
         mWangSet->setWangId(wangIdChange.tileId, wangIdChange.from);
+        if (mWangSet->isCellBased())
+            mWangSet->setCenterColor(wangIdChange.tileId, wangIdChange.centerFrom);
     }
 
     emit mTilesetDocument->tileWangSetChanged(changedTiles);
@@ -93,6 +99,8 @@ void ChangeTileWangId::redo()
         if (Tile *tile = findTile(wangIdChange.tileId))
             changedTiles.append(tile);
         mWangSet->setWangId(wangIdChange.tileId, wangIdChange.to);
+        if (mWangSet->isCellBased())
+            mWangSet->setCenterColor(wangIdChange.tileId, wangIdChange.centerTo);
     }
 
     emit mTilesetDocument->tileWangSetChanged(changedTiles);
@@ -131,8 +139,13 @@ QVector<ChangeTileWangId::WangIdChange> ChangeTileWangId::changesOnSetColorCount
             if (newWangId.indexColor(i) > colorCount)
                 newWangId.setIndexColor(i, 0);
 
-        if (it.value() != newWangId)
-            changes.append(WangIdChange(it.value(), newWangId, it.key()));
+        int oldCenter = wangSet->centerColor(it.key());
+        int newCenter = oldCenter;
+        if (wangSet->isCellBased() && newCenter > colorCount)
+            newCenter = 0;
+
+        if (it.value() != newWangId || (wangSet->isCellBased() && oldCenter != newCenter))
+            changes.append(WangIdChange(it.value(), newWangId, it.key(), oldCenter, newCenter));
     }
 
     return changes;
@@ -156,8 +169,17 @@ QVector<ChangeTileWangId::WangIdChange> ChangeTileWangId::changesOnRemoveColor(
                 newWangId.setIndexColor(i, color - 1);
         }
 
-        if (it.value() != newWangId)
-            changes.append(WangIdChange(it.value(), newWangId, it.key()));
+        int oldCenter = wangSet->centerColor(it.key());
+        int newCenter = oldCenter;
+        if (wangSet->isCellBased()) {
+            if (newCenter == removedColor)
+                newCenter = 0;
+            else if (newCenter > removedColor)
+                newCenter -= 1;
+        }
+
+        if (it.value() != newWangId || (wangSet->isCellBased() && oldCenter != newCenter))
+            changes.append(WangIdChange(it.value(), newWangId, it.key(), oldCenter, newCenter));
     }
 
     return changes;
@@ -165,8 +187,11 @@ QVector<ChangeTileWangId::WangIdChange> ChangeTileWangId::changesOnRemoveColor(
 
 void ChangeTileWangId::applyChanges(WangSet *wangSet, const QVector<WangIdChange> &changes)
 {
-    for (const WangIdChange &change : changes)
+    for (const WangIdChange &change : changes) {
         wangSet->setWangId(change.tileId, change.to);
+        if (wangSet->isCellBased())
+            wangSet->setCenterColor(change.tileId, change.centerTo);
+    }
 }
 
 Tile *ChangeTileWangId::findTile(int tileId) const

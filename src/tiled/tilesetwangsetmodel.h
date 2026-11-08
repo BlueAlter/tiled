@@ -77,6 +77,7 @@ public:
     std::unique_ptr<WangSet> takeWangSetAt(int index);
     void setWangSetName(WangSet *wangSet, const QString &name);
     void setWangSetType(WangSet *wangSet, WangSet::Type type);
+    void setWangSetCellBased(WangSet *wangSet, bool cellBased);
     void setWangSetColorCount(WangSet *wangSet, int value);
     void setWangSetImage(WangSet *wangSet, int tileId);
     void insertWangColor(WangSet *wangSet, const QSharedPointer<WangColor> &wangColor);

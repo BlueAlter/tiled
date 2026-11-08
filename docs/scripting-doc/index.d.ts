@@ -3960,6 +3960,13 @@ declare class WangSet extends TiledObject {
   type: typeof WangSet.Edge | typeof WangSet.Corner | typeof WangSet.Mixed;
 
   /**
+   * Whether this Wang set is cell-based (Godot-like center terrain and peering bits).
+   *
+   * @since 1.13
+   */
+  cellBased: boolean;
+
+  /**
    * The tile used to represent the Wang set.
    */
   imageTile: Tile;
@@ -3991,6 +3998,20 @@ declare class WangSet extends TiledObject {
    * Make sure the Wang set color count is set before calling this function, because it will raise an error when the Wang ID refers to non-existing colors.
    */
   public setWangId(tile: Tile, wangId: number[]): void;
+
+  /**
+   * Returns the center terrain color associated with the given tile in this Wang set (0 = none).
+   *
+   * @since 1.13
+   */
+  public centerColor(tile: Tile): number;
+
+  /**
+   * Sets the center terrain color associated with the given tile in this Wang set (0 = none).
+   *
+   * @since 1.13
+   */
+  public setCenterColor(tile: Tile, color: number): void;
 
   /**
    * Returns the name of the Wang color at the given index.

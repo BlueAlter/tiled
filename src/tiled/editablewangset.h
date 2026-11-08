@@ -37,6 +37,7 @@ class EditableWangSet : public EditableObject
 
     Q_PROPERTY(QString name READ name WRITE setName)
     Q_PROPERTY(Type type READ type WRITE setType)
+    Q_PROPERTY(bool cellBased READ isCellBased WRITE setCellBased)
     Q_PROPERTY(Tiled::EditableTile *imageTile READ imageTile WRITE setImageTile)
     Q_PROPERTY(int colorCount READ colorCount WRITE setColorCount)
     Q_PROPERTY(Tiled::EditableTileset *tileset READ tileset CONSTANT)
@@ -56,12 +57,16 @@ public:
 
     QString name() const;
     Type type() const;
+    bool isCellBased() const;
     EditableTile *imageTile() const;
     int colorCount() const;
     EditableTileset *tileset() const;
 
     Q_INVOKABLE QJSValue wangId(Tiled::EditableTile *tile);
     Q_INVOKABLE void setWangId(Tiled::EditableTile *tile, QJSValue value);
+
+    Q_INVOKABLE int centerColor(Tiled::EditableTile *tile) const;
+    Q_INVOKABLE void setCenterColor(Tiled::EditableTile *tile, int color);
 
     Q_INVOKABLE QString colorName(int colorIndex) const;
     Q_INVOKABLE void setColorName(int colorIndex, const QString &name);
@@ -70,6 +75,7 @@ public:
 
     void setName(const QString &name);
     void setType(Type type);
+    void setCellBased(bool cellBased);
     void setImageTile(Tiled::EditableTile *imageTile);
     void setColorCount(int n);
 
@@ -99,6 +105,11 @@ inline QString EditableWangSet::name() const
 inline EditableWangSet::Type EditableWangSet::type() const
 {
     return static_cast<Type>(wangSet()->type());
+}
+
+inline bool EditableWangSet::isCellBased() const
+{
+    return wangSet()->isCellBased();
 }
 
 inline int EditableWangSet::colorCount() const
