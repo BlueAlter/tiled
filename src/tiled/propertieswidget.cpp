@@ -226,9 +226,9 @@ template<> EnumData enumData<ObjectGroup::DrawOrder>()
 template<> EnumData enumData<WangSet::Type>()
 {
     const QStringList names {
-        QCoreApplication::translate("WangSet", "Corner"),
-        QCoreApplication::translate("WangSet", "Edge"),
-        QCoreApplication::translate("WangSet", "Mixed"),
+        QCoreApplication::translate("WangSet", "Match Corners"),
+        QCoreApplication::translate("WangSet", "Match Sides"),
+        QCoreApplication::translate("WangSet", "Match Corners and Sides"),
     };
 
     QMap<int, QIcon> icons;
@@ -2127,24 +2127,24 @@ public:
                     });
 
         mTypeProperty = new EnumProperty<WangSet::Type>(
-                    tr("Type"),
+                    tr("Mode"),
                     [this] { return wangSet()->type(); },
                     [this](WangSet::Type value) {
                         push(new ChangeWangSetType(tilesetDocument(), wangSet(), value));
                     });
 
         mCellBasedProperty = new BoolProperty(
-                    tr("Center Terrain (Godot)"),
+                    tr("Center Cell (Godot)"),
                     [this] { return wangSet()->isCellBased(); },
                     [this](bool value) {
                         push(new ChangeWangSetCellBased(tilesetDocument(),
                                                         wangSet(),
                                                         value));
                     });
-        mCellBasedProperty->setToolTip(tr("Enable center terrain per tile (like Godot's terrain system)."));
+        mCellBasedProperty->setToolTip(tr("Enable center cell per tile (like Godot's terrain system)."));
 
         mColorCountProperty = new IntProperty(
-                    tr("Color Count"),
+                    tr("Terrain Count"),
                     [this] { return wangSet()->colorCount(); },
                     [this](const int &value) {
                         push(new ChangeWangSetColorCount(tilesetDocument(),

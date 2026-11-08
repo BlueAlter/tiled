@@ -25,8 +25,6 @@
 
 #include "wangset.h"
 
-class QCheckBox;
-class QComboBox;
 class QMenu;
 class QModelIndex;
 class QPushButton;
@@ -104,7 +102,6 @@ private:
     void refreshCurrentWangSet();
     void refreshCurrentWangId();
     void refreshCurrentWangColor();
-    void refreshCenterColorCombo();
     void wangColorIndexPressed(const QModelIndex &index);
     void documentChanged(const ChangeEvent &change);
     void wangSetChanged(WangSet *wangSet);
@@ -144,9 +141,6 @@ private:
     WangSetModel *mWangSetModel;
     HasChildrenFilterModel *mWangSetProxyModel;
     QWidget *mWangColorWidget;
-    QWidget *mCenterColorWidget;
-    QCheckBox *mCenterTerrainCheck;
-    QComboBox *mCenterColorCombo;
     int mCurrentCenterColor = 0;
     WangTemplateView *mWangTemplateView;
     WangTemplateModel *mWangTemplateModel;

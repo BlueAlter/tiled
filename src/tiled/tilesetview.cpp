@@ -600,8 +600,18 @@ QIcon TilesetView::imageMissingIcon() const
 void TilesetView::mousePressEvent(QMouseEvent *event)
 {
     if (mEditWangSet) {
-        if (event->button() == Qt::LeftButton)
+        if (event->button() == Qt::LeftButton) {
+            if ((event->modifiers() & Qt::ShiftModifier) && mWangBehavior != AssignWholeId) {
+                const QModelIndex index = indexAt(event->pos());
+                if (index.isValid()) {
+                    if (Tile *tile = tilesetModel()->tileAt(index)) {
+                        fillTileWithTerrain(tile, mWangColorIndex);
+                        return;
+                    }
+                }
+            }
             mouseMoveEvent(event);
+        }
 
         return;
     }
@@ -805,6 +815,17 @@ void TilesetView::contextMenuEvent(QContextMenuEvent *event)
             }
 
             if (mWangSet) {
+                if (mWangColorIndex > 0) {
+                    QAction *fillFull = menu.addAction(tr("Fill Tile with Active Terrain (Shift+Click)"));
+                    connect(fillFull, &QAction::triggered, this, [this, tile] {
+                        fillTileWithTerrain(tile, mWangColorIndex);
+                    });
+                }
+                QAction *clearFull = menu.addAction(tr("Clear All Terrain from Tile"));
+                connect(clearFull, &QAction::triggered, this, [this, tile] {
+                    fillTileWithTerrain(tile, 0);
+                });
+
                 QMenu *centerMenu = menu.addMenu(tr("Center Terrain"));
 
                 const int currentCenter = mWangSet->centerColor(tile->id());
@@ -999,6 +1020,29 @@ void TilesetView::assignCenterColor(Tile *tile, int color)
             mTilesetDocument, mWangSet, tile,
             mWangSet->wangIdOfTile(tile), color));
     mWangIdChanged = true;
+}
+
+void TilesetView::fillTileWithTerrain(Tile *tile, int color)
+{
+    if (!mTilesetDocument || !mWangSet || !tile)
+        return;
+
+    WangId newWangId;
+    if (color > 0) {
+        for (int i = 0; i < WangId::NumIndexes; ++i)
+            newWangId.setIndexColor(i, color);
+    }
+
+    if (!mWangSet->isCellBased() && color > 0) {
+        mTilesetDocument->undoStack()->push(new ChangeWangSetCellBased(
+                mTilesetDocument, mWangSet, true));
+    }
+
+    mTilesetDocument->undoStack()->push(new ChangeTileWangId(
+            mTilesetDocument, mWangSet, tile,
+            newWangId, color));
+    mWangIdChanged = true;
+    update();
 }
 
 void TilesetView::applyWangId()

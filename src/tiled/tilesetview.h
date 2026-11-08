@@ -132,6 +132,7 @@ private:
     void selectWangSetImage();
     void selectWangColorImage();
     void assignCenterColor(Tile *tile, int color);
+    void fillTileWithTerrain(Tile *tile, int color);
     void editTileProperties();
     void swapTiles();
     void setDrawGrid(bool drawGrid);
