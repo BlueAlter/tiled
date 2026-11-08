@@ -675,25 +675,29 @@ void WangBrush::updateBrushCenterAt(WangFiller &filler, QPoint pos)
     center.desiredCenter = mCurrentCenterColor;
 
     const TileLayer *tileLayer = currentTileLayer();
+    const auto &grid = filler.region().grid;
 
     for (int i = 0; i < WangId::NumIndexes; ++i) {
         const QPoint adjacentPos = adjacentPositions[i];
-        WangFiller::CellInfo &adjacent = filler.changePosition(adjacentPos);
 
-        // Determine the center terrain of the adjacent tile. When it has not
-        // been painted yet, fall back to the tile that is currently there.
-        int adjacentCenter = adjacent.desiredCenter;
-        if (adjacentCenter < 0) {
-            const Cell &adjacentCell = tileLayer->cellAt(adjacentPos - tileLayer->position());
+        const bool inRegion = filler.region().region.contains(adjacentPos);
+        int adjacentCenter = 0;
+
+        const Cell &adjacentCell = tileLayer->cellAt(adjacentPos - tileLayer->position());
+        const bool hasExistingTile = !adjacentCell.isEmpty();
+
+        if (inRegion) {
+            adjacentCenter = grid.get(adjacentPos).desiredCenter;
+        } else if (hasExistingTile) {
             adjacentCenter = mWangSet->centerColorOfCell(adjacentCell);
         }
 
-        const bool isCorner = WangId::isCorner(i);
-        if (!isCorner) {
-            const int color = adjacentCenter > 0 ? adjacentCenter : mCurrentCenterColor;
-            center.desired.setIndexColor(i, color);
-            center.mask.setIndexColor(i, WangId::INDEX_MASK);
+        const int color = (adjacentCenter > 0) ? adjacentCenter : 0;
+        center.desired.setIndexColor(i, color);
+        center.mask.setIndexColor(i, WangId::INDEX_MASK);
 
+        if (inRegion || hasExistingTile) {
+            WangFiller::CellInfo &adjacent = filler.changePosition(adjacentPos);
             adjacent.desired.setIndexColor(WangId::oppositeIndex(i), mCurrentCenterColor);
             adjacent.mask.setIndexColor(WangId::oppositeIndex(i), WangId::INDEX_MASK);
         }

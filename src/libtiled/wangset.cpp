@@ -675,19 +675,46 @@ void WangSet::recalculateCells()
     QSet<WangId> addedWangIds;
 
     // First insert all available tiles
+    QSet<int> processedTileIds;
+
     QHashIterator<int, WangId> it(mTileIdToWangId);
     while (it.hasNext()) {
         it.next();
+
+        const int tileId = it.key();
+        processedTileIds.insert(tileId);
 
         if (!mCellBased && it.value().isEmpty())
             continue;
 
         const auto wangId = WangId(it.value() & mask);
-        const int center = mCellBased ? mTileIdToCenterColor.value(it.key(), 0) : 0;
+        const int center = mCellBased ? mTileIdToCenterColor.value(tileId, 0) : 0;
+
+        if (mCellBased && it.value().isEmpty() && center == 0)
+            continue;
 
         mUniqueFullWangIdCount += !wangId.hasWildCards() && !addedWangIds.contains(wangId);
         addedWangIds.insert(wangId);
-        mWangIdAndCells.append({wangId, Cell(mTileset, it.key()), center});
+        mWangIdAndCells.append({wangId, Cell(mTileset, tileId), center});
+    }
+
+    if (mCellBased) {
+        QHashIterator<int, int> centerIt(mTileIdToCenterColor);
+        while (centerIt.hasNext()) {
+            centerIt.next();
+            const int tileId = centerIt.key();
+            if (processedTileIds.contains(tileId))
+                continue;
+
+            const int center = centerIt.value();
+            if (center == 0)
+                continue;
+
+            const WangId wangId = WangId();
+            mUniqueFullWangIdCount += !addedWangIds.contains(wangId);
+            addedWangIds.insert(wangId);
+            mWangIdAndCells.append({wangId, Cell(mTileset, tileId), center});
+        }
     }
 
     const auto transformationFlags = tileset()->transformationFlags();

@@ -394,11 +394,16 @@ bool WangFiller::findBestMatch(const TileLayer &target,
     int lowestPenalty = INT_MAX;
 
     auto processCandidate = [&] (WangId wangId, const Cell &cell, int centerColor) {
-        if ((wangId & info.mask) != maskedWangId)
-            return;
+        if (mWangSet.isCellBased()) {
+            if (info.desiredCenter >= 0 && centerColor != info.desiredCenter)
+                return;
+        } else {
+            if ((wangId & info.mask) != maskedWangId)
+                return;
 
-        if (info.desiredCenter >= 0 && centerColor != info.desiredCenter)
-            return;
+            if (info.desiredCenter >= 0 && centerColor != info.desiredCenter)
+                return;
+        }
 
         int totalPenalty = 0;
 
@@ -415,14 +420,14 @@ bool WangFiller::findBestMatch(const TileLayer &target,
 
             // If there is no path to the desired color, this isn't a useful transition
             if (penalty < 0) {
-                if (mCorrectionsEnabled) {
+                if (mCorrectionsEnabled && !mWangSet.isCellBased()) {
                     // When we're doing corrections, we'd rather not choose
                     // this candidate at all because it's impossible to
                     // transition to the desired color.
                     return;
                 }
 
-                penalty = mWangSet.maximumColorDistance() + 1;
+                penalty = mWangSet.maximumColorDistance() + 2;
             }
 
             totalPenalty += penalty;
@@ -458,7 +463,7 @@ bool WangFiller::findBestMatch(const TileLayer &target,
         // candidate. This can be a relatively expensive check, that we'll only
         // do when we're not making corrections and when the WangSet is not
         // complete.
-        if (!mCorrectionsEnabled && !mWangSet.isComplete()) {
+        if (!mCorrectionsEnabled && !mWangSet.isComplete() && !mWangSet.isCellBased()) {
             const WangId resultWangId = mWangSet.wangIdOfCell(result);
             bool discard = false;
 
