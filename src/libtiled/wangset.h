@@ -173,13 +173,15 @@ TILEDSHARED_EXPORT QDebug operator<<(QDebug debug, WangId wangId);
 class TILEDSHARED_EXPORT WangTile
 {
 public:
-    WangTile(int tileId, WangId wangId)
+    WangTile(int tileId, WangId wangId, int centerColor = 0)
         : mTileId(tileId)
         , mWangId(wangId)
+        , mCenterColor(centerColor)
     {}
 
     int tileId() const { return mTileId; }
     WangId wangId() const { return mWangId; }
+    int centerColor() const { return mCenterColor; }
 
     bool operator< (const WangTile &other) const
     { return mTileId < other.mTileId; }
@@ -187,6 +189,7 @@ public:
 private:
     int mTileId;
     WangId mWangId;
+    int mCenterColor = 0;
 };
 
 TILEDSHARED_EXPORT QDebug operator<<(QDebug debug, const WangTile &wangTile);
@@ -269,6 +272,18 @@ public:
 
     WangId typeMask() const;
 
+    bool isCellBased() const;
+    bool cellBased() const;
+    void setCellBased(bool cellBased);
+
+    int centerColor(int tileId) const;
+    void setCenterColor(int tileId, int color);
+
+    int centerColorOfTile(const Tile *tile) const;
+    int centerColorOfCell(const Cell &cell) const;
+
+    const QHash<int, int> &centerColorByTileId() const { return mTileIdToCenterColor; }
+
     int imageTileId() const;
     void setImageTileId(int imageTileId);
     Tile *imageTile() const;
@@ -291,6 +306,7 @@ public:
     {
         WangId wangId;
         Cell cell;
+        int centerColor = 0;
     };
 
     const QVector<WangIdAndCell> &wangIdsAndCells() const;
@@ -333,6 +349,7 @@ private:
     Type mType;
     WangId mTypeMask;
     int mImageTileId;
+    bool mCellBased = false;
 
     // How many unique, full WangIds are active in this set.
     // Where full means the id has no wildcards
@@ -340,6 +357,7 @@ private:
 
     QVector<QSharedPointer<WangColor>> mColors;
     QHash<int, WangId> mTileIdToWangId;
+    QHash<int, int> mTileIdToCenterColor;
 
     QVector<WangIdAndCell> mWangIdAndCells;
 
@@ -378,6 +396,35 @@ inline WangSet::Type WangSet::type() const
 inline WangId WangSet::typeMask() const
 {
     return mTypeMask;
+}
+
+inline bool WangSet::isCellBased() const
+{
+    return mCellBased;
+}
+
+inline bool WangSet::cellBased() const
+{
+    return mCellBased;
+}
+
+inline int WangSet::centerColor(int tileId) const
+{
+    return mTileIdToCenterColor.value(tileId, 0);
+}
+
+inline int WangSet::centerColorOfTile(const Tile *tile) const
+{
+    if (!tile || tile->tileset() != mTileset)
+        return 0;
+    return centerColor(tile->id());
+}
+
+inline int WangSet::centerColorOfCell(const Cell &cell) const
+{
+    if (cell.tileset() != mTileset)
+        return 0;
+    return centerColor(cell.tileId());
 }
 
 inline int WangSet::imageTileId() const
