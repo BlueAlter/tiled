@@ -2133,6 +2133,16 @@ public:
                         push(new ChangeWangSetType(tilesetDocument(), wangSet(), value));
                     });
 
+        mCellBasedProperty = new BoolProperty(
+                    tr("Center Terrain (Godot)"),
+                    [this] { return wangSet()->isCellBased(); },
+                    [this](bool value) {
+                        push(new ChangeWangSetCellBased(tilesetDocument(),
+                                                        wangSet(),
+                                                        value));
+                    });
+        mCellBasedProperty->setToolTip(tr("Enable center terrain per tile (like Godot's terrain system)."));
+
         mColorCountProperty = new IntProperty(
                     tr("Color Count"),
                     [this] { return wangSet()->colorCount(); },
@@ -2148,6 +2158,7 @@ public:
         mWangSetProperties->addProperty(mClassProperty);
         mWangSetProperties->addSeparator();
         mWangSetProperties->addProperty(mTypeProperty);
+        mWangSetProperties->addProperty(mCellBasedProperty);
         mWangSetProperties->addProperty(mColorCountProperty);
 
         addProperty(mWangSetProperties);
@@ -2181,6 +2192,7 @@ private:
             emit mColorCountProperty->valueChanged();
             break;
         case WangSetChangeEvent::CellBasedProperty:
+            emit mCellBasedProperty->valueChanged();
             break;
         }
     }
@@ -2190,6 +2202,7 @@ private:
         const bool hasTilesetDocument = tilesetDocument();
         mNameProperty->setEnabled(hasTilesetDocument);
         mTypeProperty->setEnabled(hasTilesetDocument);
+        mCellBasedProperty->setEnabled(hasTilesetDocument);
         mColorCountProperty->setEnabled(hasTilesetDocument);
     }
 
@@ -2206,6 +2219,7 @@ private:
     GroupProperty *mWangSetProperties;
     Property *mNameProperty;
     Property *mTypeProperty;
+    BoolProperty *mCellBasedProperty;
     IntProperty *mColorCountProperty;
 };
 

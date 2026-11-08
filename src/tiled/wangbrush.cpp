@@ -221,9 +221,23 @@ void WangBrush::setColor(int color)
     }
 }
 
+void WangBrush::setCenterColor(int color)
+{
+    if (mCurrentCenterColor == color)
+        return;
+
+    mCurrentCenterColor = color;
+    stateChanged();
+}
+
+bool WangBrush::centerActive() const
+{
+    return mWangSet && mWangSet->isCellBased() && mCurrentCenterColor > 0;
+}
+
 void WangBrush::mouseMoved(const QPointF &pos, Qt::KeyboardModifiers modifiers)
 {
-    if (mBrushMode == Idle || mIsTileMode) {
+    if (mBrushMode == Idle || mIsTileMode || centerActive()) {
         AbstractTileTool::mouseMoved(pos, modifiers);
         return;
     }
@@ -348,7 +362,7 @@ void WangBrush::tilePositionChanged(QPoint tilePos)
     if (mBrushMode == Idle)
         return;
 
-    if (!mIsTileMode)
+    if (!mIsTileMode && !centerActive())
         return;
 
     mPrevPaintPoint = std::exchange(mPaintPoint, tilePos);
@@ -389,11 +403,16 @@ void WangBrush::updateStatusInfo()
     }
 
     QString wangColor;
-    if (mWangSet && mCurrentColor && mCurrentColor <= mWangSet->colorCount())
-        wangColor = mWangSet->colorAt(mCurrentColor)->name();
+    const int currentColor = centerActive() ? mCurrentCenterColor : mCurrentColor;
+    if (mWangSet && currentColor && currentColor <= mWangSet->colorCount())
+        wangColor = mWangSet->colorAt(currentColor)->name();
 
-    if (!wangColor.isEmpty())
-        wangColor = QStringLiteral(" [%1]").arg(wangColor);
+    if (!wangColor.isEmpty()) {
+        if (centerActive())
+            wangColor = QStringLiteral(" [%1: %2]").arg(tr("Center"), wangColor);
+        else
+            wangColor = QStringLiteral(" [%1]").arg(wangColor);
+    }
 
     QString lineInfo;
     if (mBrushBehavior == Line) {
@@ -421,6 +440,7 @@ void WangBrush::updateStatusInfo()
 void WangBrush::wangSetChanged(const WangSet *wangSet)
 {
     mCurrentColor = 0;
+    mCurrentCenterColor = 0;
     mWangSet = wangSet;
 
     if (mWangSet) {
@@ -537,9 +557,11 @@ void WangBrush::updateBrush()
     bool ignoreFirst = false;
 
     if (mBrushBehavior == Line && mLineStartSet) {
-        points = pointsOnLine(mLineStartPos, mPaintPoint, !mIsTileMode && mBrushMode != PaintEdgeAndCorner);
-    } else if (mBrushBehavior == Paint && (mBrushMode == PaintEdge || mBrushMode == PaintCorner || mIsTileMode)) {
-        points = pointsOnLine(mPrevPaintPoint, mPaintPoint, !mIsTileMode);
+        points = pointsOnLine(mLineStartPos, mPaintPoint,
+                              !mIsTileMode && !centerActive() && mBrushMode != PaintEdgeAndCorner);
+    } else if (mBrushBehavior == Paint && (mBrushMode == PaintEdge || mBrushMode == PaintCorner ||
+                                           mIsTileMode || centerActive())) {
+        points = pointsOnLine(mPrevPaintPoint, mPaintPoint, !mIsTileMode && !centerActive());
         ignoreFirst = points.size() > 1; // first point has already been painted last time
     } else {
         points.append(mPaintPoint);
@@ -619,36 +641,77 @@ void WangBrush::updateBrush()
     updateStatusInfo();
 }
 
+void WangBrush::surroundingPositions(QPoint pos, QPoint points[WangId::NumIndexes]) const
+{
+    if (auto hexagonalRenderer = dynamic_cast<HexagonalRenderer*>(mapDocument()->renderer())) {
+        points[0] = hexagonalRenderer->topRight(pos.x(), pos.y());
+        points[2] = hexagonalRenderer->bottomRight(pos.x(), pos.y());
+        points[4] = hexagonalRenderer->bottomLeft(pos.x(), pos.y());
+        points[6] = hexagonalRenderer->topLeft(pos.x(), pos.y());
+
+        if (mapDocument()->map()->staggerAxis() == Map::StaggerX) {
+            points[1] = pos + QPoint(2, 0);
+            points[3] = pos + QPoint(0, 1);
+            points[5] = pos + QPoint(-2, 0);
+            points[7] = pos + QPoint(0, -1);
+        } else {
+            points[1] = pos + QPoint(1, 0);
+            points[3] = pos + QPoint(0, 2);
+            points[5] = pos + QPoint(-1, 0);
+            points[7] = pos + QPoint(0, -2);
+        }
+    } else {
+        for (int i = 0; i < WangId::NumIndexes; ++i)
+            points[i] = pos + aroundTilePoints[i];
+    }
+}
+
+void WangBrush::updateBrushCenterAt(WangFiller &filler, QPoint pos)
+{
+    QPoint adjacentPositions[WangId::NumIndexes];
+    surroundingPositions(pos, adjacentPositions);
+
+    WangFiller::CellInfo &center = filler.changePosition(pos);
+    center.desiredCenter = mCurrentCenterColor;
+
+    const TileLayer *tileLayer = currentTileLayer();
+
+    for (int i = 0; i < WangId::NumIndexes; ++i) {
+        const QPoint adjacentPos = adjacentPositions[i];
+        WangFiller::CellInfo &adjacent = filler.changePosition(adjacentPos);
+
+        // Determine the center terrain of the adjacent tile. When it has not
+        // been painted yet, fall back to the tile that is currently there.
+        int adjacentCenter = adjacent.desiredCenter;
+        if (adjacentCenter < 0) {
+            const Cell &adjacentCell = tileLayer->cellAt(adjacentPos - tileLayer->position());
+            adjacentCenter = mWangSet->centerColorOfCell(adjacentCell);
+        }
+
+        const bool isCorner = WangId::isCorner(i);
+        if (!isCorner) {
+            const int color = adjacentCenter > 0 ? adjacentCenter : mCurrentCenterColor;
+            center.desired.setIndexColor(i, color);
+            center.mask.setIndexColor(i, WangId::INDEX_MASK);
+
+            adjacent.desired.setIndexColor(WangId::oppositeIndex(i), mCurrentCenterColor);
+            adjacent.mask.setIndexColor(WangId::oppositeIndex(i), WangId::INDEX_MASK);
+        }
+    }
+}
+
 void WangBrush::updateBrushAt(WangFiller &filler, QPoint pos)
 {
-    auto hexagonalRenderer = dynamic_cast<HexagonalRenderer*>(mapDocument()->renderer());
+    if (centerActive()) {
+        updateBrushCenterAt(filler, pos);
+        return;
+    }
 
     // When drawing lines in PaintEdgeAndCorner mode we force "tile mode"
     // because we currently can't draw thinner lines properly in that mode.
     if (mIsTileMode || (mBrushBehavior == Line && mBrushMode == PaintEdgeAndCorner)) {
-        //array of adjacent positions which is assigned based on map orientation.
         QPoint adjacentPositions[WangId::NumIndexes];
-        if (hexagonalRenderer) {
-            adjacentPositions[0] = hexagonalRenderer->topRight(pos.x(), pos.y());
-            adjacentPositions[2] = hexagonalRenderer->bottomRight(pos.x(), pos.y());
-            adjacentPositions[4] = hexagonalRenderer->bottomLeft(pos.x(), pos.y());
-            adjacentPositions[6] = hexagonalRenderer->topLeft(pos.x(), pos.y());
-
-            if (mapDocument()->map()->staggerAxis() == Map::StaggerX) {
-                adjacentPositions[1] = pos + QPoint(2, 0);
-                adjacentPositions[3] = pos + QPoint(0, 1);
-                adjacentPositions[5] = pos + QPoint(-2, 0);
-                adjacentPositions[7] = pos + QPoint(0, -1);
-            } else {
-                adjacentPositions[1] = pos + QPoint(1, 0);
-                adjacentPositions[3] = pos + QPoint(0, 2);
-                adjacentPositions[5] = pos + QPoint(-1, 0);
-                adjacentPositions[7] = pos + QPoint(0, -2);
-            }
-        } else {
-            for (int i = 0; i < WangId::NumIndexes; ++i)
-                adjacentPositions[i] = pos + aroundTilePoints[i];
-        }
+        surroundingPositions(pos, adjacentPositions);
 
         WangFiller::CellInfo &center = filler.changePosition(pos);
 

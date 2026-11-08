@@ -65,7 +65,17 @@ WangFiller::CellInfo &WangFiller::changePosition(QPoint pos)
     // Initialize the desired WangId when necessary, and make sure the location
     // is part of the to be processed region.
     if (info == CellInfo()) {
-        info.desired = mWangSet.wangIdOfCell(mBack.cellAt(pos));
+        const Cell &backCell = mBack.cellAt(pos);
+        info.desired = mWangSet.wangIdOfCell(backCell);
+
+        // Preserve the center terrain of existing tiles. For empty tiles the
+        // center stays unconstrained, unless the brush explicitly sets it.
+        if (mWangSet.isCellBased() && !backCell.isEmpty()) {
+            const int center = mWangSet.centerColorOfCell(backCell);
+            if (center > 0)
+                info.desiredCenter = center;
+        }
+
         mFillRegion.region += QRect(pos, pos);
     }
 
@@ -383,8 +393,11 @@ bool WangFiller::findBestMatch(const TileLayer &target,
     RandomPicker<Cell> matches;
     int lowestPenalty = INT_MAX;
 
-    auto processCandidate = [&] (WangId wangId, const Cell &cell) {
+    auto processCandidate = [&] (WangId wangId, const Cell &cell, int centerColor) {
         if ((wangId & info.mask) != maskedWangId)
+            return;
+
+        if (info.desiredCenter >= 0 && centerColor != info.desiredCenter)
             return;
 
         int totalPenalty = 0;
@@ -432,10 +445,10 @@ bool WangFiller::findBestMatch(const TileLayer &target,
 
     const auto &wangIdsAndCells = mWangSet.wangIdsAndCells();
     for (const auto &wangIdAndCell : wangIdsAndCells)
-        processCandidate(wangIdAndCell.wangId, wangIdAndCell.cell);
+        processCandidate(wangIdAndCell.wangId, wangIdAndCell.cell, wangIdAndCell.centerColor);
 
     if (mErasingEnabled)
-        processCandidate(WangId(), Cell());
+        processCandidate(WangId(), Cell(), 0);
 
     // Choose a candidate at random, with consideration for probability
     while (!matches.isEmpty()) {

@@ -483,9 +483,10 @@ void paintWangOverlay(QPainter *painter,
                       WangId wangId,
                       const WangSet &wangSet,
                       const QRect &rect,
-                      WangOverlayOptions options)
+                      WangOverlayOptions options,
+                      int centerColor)
 {
-    if (!wangId)
+    if (!wangId && centerColor == 0)
         return;
 
     const QRect adjustedRect = rect.adjusted(2, 2, -2, -2);
@@ -574,6 +575,43 @@ void paintWangOverlay(QPainter *painter,
     if (mask) {
         const QColor maskColor = QGuiApplication::palette().color(QPalette::Highlight);
         paintColor(mask, maskColor);
+    }
+
+    if (centerColor > 0) {
+        static const QPainterPath centerPath = [] {
+            constexpr qreal d = 1.0 / 3.0;
+            constexpr qreal inset = d * 0.15;
+            QPainterPath path;
+            path.addRoundedRect(QRectF(d + inset, d + inset, d - 2 * inset, d - 2 * inset), 0.05, 0.05);
+            return path;
+        }();
+
+        QColor color;
+        if (centerColor == (int)WangId::INDEX_MASK)
+            color = QGuiApplication::palette().color(QPalette::Highlight);
+        else if (centerColor <= wangSet.colorCount())
+            color = wangSet.colorAt(centerColor)->color();
+
+        if (color.isValid()) {
+            if (options.testFlag(WO_Shadow)) {
+                painter->setBrush(Qt::NoBrush);
+                if (options.testFlag(WO_Outline))
+                    setCosmeticPen(painter, Qt::black, penWidth);
+                painter->setTransform(shadowTransform);
+                painter->drawPath(centerPath);
+            }
+
+            painter->setBrush(QColor(color.red(), color.green(), color.blue(),
+                                     color.alpha() * fillOpacity));
+            if (options.testFlag(WO_Outline)) {
+                if (options.testFlag(WO_TransparentFill))
+                    setCosmeticPen(painter, color, penWidth);
+                else
+                    setCosmeticPen(painter, Qt::black, penWidth);
+            }
+            painter->setTransform(foregroundTransform);
+            painter->drawPath(centerPath);
+        }
     }
 
     painter->restore();

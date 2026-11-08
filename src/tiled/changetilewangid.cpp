@@ -81,8 +81,7 @@ void ChangeTileWangId::undo()
         if (Tile *tile = findTile(wangIdChange.tileId))
             changedTiles.append(tile);
         mWangSet->setWangId(wangIdChange.tileId, wangIdChange.from);
-        if (mWangSet->isCellBased())
-            mWangSet->setCenterColor(wangIdChange.tileId, wangIdChange.centerFrom);
+        mWangSet->setCenterColor(wangIdChange.tileId, wangIdChange.centerFrom);
     }
 
     emit mTilesetDocument->tileWangSetChanged(changedTiles);
@@ -99,8 +98,7 @@ void ChangeTileWangId::redo()
         if (Tile *tile = findTile(wangIdChange.tileId))
             changedTiles.append(tile);
         mWangSet->setWangId(wangIdChange.tileId, wangIdChange.to);
-        if (mWangSet->isCellBased())
-            mWangSet->setCenterColor(wangIdChange.tileId, wangIdChange.centerTo);
+        mWangSet->setCenterColor(wangIdChange.tileId, wangIdChange.centerTo);
     }
 
     emit mTilesetDocument->tileWangSetChanged(changedTiles);
@@ -189,8 +187,7 @@ void ChangeTileWangId::applyChanges(WangSet *wangSet, const QVector<WangIdChange
 {
     for (const WangIdChange &change : changes) {
         wangSet->setWangId(change.tileId, change.to);
-        if (wangSet->isCellBased())
-            wangSet->setCenterColor(change.tileId, change.centerTo);
+        wangSet->setCenterColor(change.tileId, change.centerTo);
     }
 }
 

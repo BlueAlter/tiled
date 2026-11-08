@@ -41,7 +41,8 @@ void paintWangOverlay(QPainter *painter,
                       WangId wangId,
                       const WangSet &wangSet,
                       const QRect &rect,
-                      WangOverlayOptions options = WO_TransparentFill | WO_Shadow | WO_Outline);
+                      WangOverlayOptions options = WO_TransparentFill | WO_Shadow | WO_Outline,
+                      int centerColor = 0);
 
 QIcon wangSetIcon(WangSet::Type type);
 

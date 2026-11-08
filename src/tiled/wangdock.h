@@ -25,6 +25,8 @@
 
 #include "wangset.h"
 
+class QComboBox;
+class QLabel;
 class QMenu;
 class QModelIndex;
 class QPushButton;
@@ -62,6 +64,7 @@ public:
     WangSet *currentWangSet() const { return mCurrentWangSet; }
     WangId currentWangId() const { return mCurrentWangId; }
     int currentWangColor() const;
+    int currentCenterColor() const { return mCurrentCenterColor; }
 
     void editWangSetName(WangSet *wangSet);
     void editWangColorName(int colorIndex);
@@ -84,6 +87,9 @@ signals:
     // When the color view selection changes.
     void wangColorChanged(int color);
 
+    // When the center terrain selection changes.
+    void centerColorChanged(int color);
+
 public slots:
     void setCurrentWangSet(WangSet *wangSet);
     void onCurrentWangIdChanged(WangId wangId);
@@ -98,6 +104,7 @@ private:
     void refreshCurrentWangSet();
     void refreshCurrentWangId();
     void refreshCurrentWangColor();
+    void refreshCenterColorCombo();
     void wangColorIndexPressed(const QModelIndex &index);
     void documentChanged(const ChangeEvent &change);
     void wangSetChanged(WangSet *wangSet);
@@ -137,6 +144,10 @@ private:
     WangSetModel *mWangSetModel;
     HasChildrenFilterModel *mWangSetProxyModel;
     QWidget *mWangColorWidget;
+    QWidget *mCenterColorWidget;
+    QLabel *mCenterColorLabel;
+    QComboBox *mCenterColorCombo;
+    int mCurrentCenterColor = 0;
     WangTemplateView *mWangTemplateView;
     WangTemplateModel *mWangTemplateModel;
     QTabWidget *mTemplateAndColorView;

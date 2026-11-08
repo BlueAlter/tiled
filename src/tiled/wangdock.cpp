@@ -39,6 +39,7 @@
 #include "utils.h"
 
 #include <QAction>
+#include <QComboBox>
 #include <QEvent>
 #include <QBoxLayout>
 #include <QPushButton>
@@ -51,7 +52,9 @@
 #include <QToolButton>
 #include <QMenu>
 #include <QPainter>
+#include <QPixmap>
 #include <QScopedValueRollback>
+#include <QSignalBlocker>
 #include <QStackedWidget>
 #include <QLabel>
 
@@ -261,9 +264,38 @@ WangDock::WangDock(QWidget *parent)
     colorViewHorizontal->addWidget(mWangColorToolBar);
 
     mWangColorWidget = new QWidget;
+
+    // Center terrain selection, only used by cell-based terrain sets.
+    mCenterColorLabel = new QLabel(mWangColorWidget);
+    mCenterColorCombo = new QComboBox(mWangColorWidget);
+    mCenterColorCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+    QHBoxLayout *centerColorLayout = new QHBoxLayout;
+    centerColorLayout->setContentsMargins(0, 0, 0, 0);
+    centerColorLayout->addWidget(mCenterColorLabel);
+    centerColorLayout->addWidget(mCenterColorCombo, 1);
+
+    mCenterColorWidget = new QWidget(mWangColorWidget);
+    mCenterColorWidget->setLayout(centerColorLayout);
+    mCenterColorWidget->setVisible(false);
+
+    connect(mCenterColorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int index) {
+        if (mInitializing)
+            return;
+
+        const int color = mCenterColorCombo->itemData(index).toInt();
+        if (mCurrentCenterColor == color)
+            return;
+
+        mCurrentCenterColor = color;
+        emit centerColorChanged(color);
+    });
+
     QVBoxLayout *colorViewVertical = new QVBoxLayout(mWangColorWidget);
     colorViewVertical->setContentsMargins(0, 0, 0, 0);
     colorViewVertical->addWidget(mWangColorView);
+    colorViewVertical->addWidget(mCenterColorWidget);
     colorViewVertical->addLayout(colorViewHorizontal);
 
     mTemplateAndColorView = new QTabWidget;
@@ -455,6 +487,16 @@ void WangDock::refreshCurrentWangColor()
     mEraseWangIdsButton->setChecked(color == 0);
     mRemoveColor->setEnabled(color != 0);
     emit wangColorChanged(color);
+
+    if (mCurrentWangSet && mCurrentWangSet->isCellBased()) {
+        int index = mCenterColorCombo->findData(color);
+        if (index >= 0 && mCenterColorCombo->currentIndex() != index) {
+            QSignalBlocker blocker(mCenterColorCombo);
+            mCenterColorCombo->setCurrentIndex(index);
+            mCurrentCenterColor = color;
+            emit centerColorChanged(color);
+        }
+    }
 }
 
 void WangDock::wangColorIndexPressed(const QModelIndex &index)
@@ -484,8 +526,16 @@ void WangDock::documentChanged(const ChangeEvent &change)
         }
         break;
     case ChangeEvent::WangSetChanged:
-        if (static_cast<const WangSetChangeEvent&>(change).property == WangSetChangeEvent::TypeProperty)
+        switch (static_cast<const WangSetChangeEvent&>(change).property) {
+        case WangSetChangeEvent::TypeProperty:
             mWangTemplateModel->wangSetChanged();
+            break;
+        case WangSetChangeEvent::CellBasedProperty:
+            refreshCenterColorCombo();
+            break;
+        default:
+            break;
+        }
         break;
     default:
         break;
@@ -504,8 +554,55 @@ void WangDock::wangSetChanged(WangSet *wangSet)
 
     refreshCurrentWangColor();
     refreshCurrentWangId();
+    refreshCenterColorCombo();
 
     updateAddColorStatus();
+}
+
+void WangDock::refreshCenterColorCombo()
+{
+    QSignalBlocker blocker(mCenterColorCombo);
+
+    const bool cellBased = mCurrentWangSet && mCurrentWangSet->isCellBased();
+    mCenterColorWidget->setVisible(cellBased);
+    mCenterColorCombo->clear();
+
+    if (!cellBased) {
+        if (mCurrentCenterColor != 0) {
+            mCurrentCenterColor = 0;
+            emit centerColorChanged(0);
+        }
+        return;
+    }
+
+    mCenterColorCombo->addItem(tr("None"), 0);
+
+    for (int i = 1; i <= mCurrentWangSet->colorCount(); ++i) {
+        const auto &wangColor = mCurrentWangSet->colorAt(i);
+        QPixmap swatch(16, 16);
+        swatch.fill(wangColor->color());
+        mCenterColorCombo->addItem(QIcon(swatch), wangColor->name(), i);
+    }
+
+    int index = mCenterColorCombo->findData(mCurrentCenterColor);
+    if (index < 0 || mCurrentCenterColor == 0) {
+        int currentColor = currentWangColor();
+        if (currentColor > 0) {
+            int currentIdx = mCenterColorCombo->findData(currentColor);
+            if (currentIdx >= 0)
+                index = currentIdx;
+        }
+        if (index < 0)
+            index = 0;
+    }
+
+    mCenterColorCombo->setCurrentIndex(index);
+
+    const int color = mCenterColorCombo->itemData(index).toInt();
+    if (mCurrentCenterColor != color) {
+        mCurrentCenterColor = color;
+        emit centerColorChanged(color);
+    }
 }
 
 void WangDock::wangSetIndexPressed(const QModelIndex &index)
@@ -619,6 +716,8 @@ void WangDock::setCurrentWangSet(WangSet *wangSet)
 
     mDuplicateWangSet->setEnabled(wangSet);
     mRemoveWangSet->setEnabled(wangSet);
+
+    refreshCenterColorCombo();
 }
 
 void WangDock::activateErase()
@@ -653,6 +752,9 @@ void WangDock::retranslateUi()
     mRemoveWangSet->setText(tr("Remove Terrain Set"));
     mAddColor->setText(tr("Add Terrain"));
     mRemoveColor->setText(tr("Remove Terrain"));
+
+    mCenterColorLabel->setText(tr("Center:"));
+    mCenterColorCombo->setToolTip(tr("Center terrain to paint with the Terrain Brush"));
 
     mTemplateAndColorView->setTabText(0, tr("Terrains"));
     mTemplateAndColorView->setTabText(1, tr("Patterns"));

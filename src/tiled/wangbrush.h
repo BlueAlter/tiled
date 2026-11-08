@@ -75,6 +75,7 @@ public:
     void languageChanged() override;
 
     void setColor(int color);
+    void setCenterColor(int color);
 
     void populateToolBar(QToolBar *toolbar) override;
 
@@ -106,6 +107,10 @@ private:
     void doPaint(bool mergeable);
     void updateBrush();
     void updateBrushAt(WangFiller &filler, QPoint pos);
+    void updateBrushCenterAt(WangFiller &filler, QPoint pos);
+    void surroundingPositions(QPoint pos, QPoint points[WangId::NumIndexes]) const;
+
+    bool centerActive() const;
 
     // The point painting happens around
     // In tile mode, this is that tile
@@ -119,6 +124,7 @@ private:
 
     const WangSet *mWangSet = nullptr;
     int mCurrentColor = 0;
+    int mCurrentCenterColor = 0;
     BrushMode mBrushMode = Idle;
     bool mIsTileMode = false;
     bool mIsTileModeDefault = false;
