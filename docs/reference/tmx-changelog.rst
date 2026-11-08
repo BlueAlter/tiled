@@ -4,6 +4,13 @@ TMX Changelog
 Below are described the changes/additions that were made to the
 :doc:`tmx-map-format` for recent versions of Tiled.
 
+Tiled 1.13
+----------
+
+-  Added ``cellbased`` attribute to :ref:`tmx-wangset` to enable cell-based terrain sets.
+
+-  Added ``center`` attribute to :ref:`tmx-wangtile` to specify the center terrain color in cell-based Wang sets.
+
 Tiled 1.12
 ----------
 

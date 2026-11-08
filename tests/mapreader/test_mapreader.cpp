@@ -3,7 +3,13 @@
 #include "objectgroup.h"
 #include "tilelayer.h"
 #include "mapreader.h"
+#include "mapwriter.h"
+#include "maptovariantconverter.h"
+#include "varianttomapconverter.h"
+#include "tileset.h"
+#include "wangset.h"
 
+#include <QBuffer>
 #include <QtTest/QtTest>
 
 using namespace Tiled;
@@ -14,6 +20,10 @@ class test_MapReader : public QObject
 
 private slots:
     void loadMap();
+    void loadCellBasedTileset();
+    void roundTripTmxCellBasedWangSet();
+    void roundTripJsonCellBasedWangSet();
+    void classicWangSetSerializationIdentical();
 };
 
 void test_MapReader::loadMap()
@@ -51,6 +61,134 @@ void test_MapReader::loadMap()
     QCOMPARE(mapObject->y(), qreal(200));
     QCOMPARE(mapObject->width(), qreal(128));
     QCOMPARE(mapObject->height(), qreal(64));
+}
+
+void test_MapReader::loadCellBasedTileset()
+{
+    MapReader reader;
+    auto tileset = reader.readTileset("../wangtiles/cellbased_grass_and_water.tsx");
+    QVERIFY(tileset.data());
+    QCOMPARE(tileset->wangSetCount(), 1);
+
+    WangSet *ws = tileset->wangSet(0);
+    QVERIFY(ws->isCellBased());
+    QCOMPARE(ws->centerColor(0), 1);
+    QCOMPARE(ws->centerColor(3), 1);
+    QCOMPARE(ws->centerColor(22), 2);
+    QCOMPARE(ws->centerColor(23), 2);
+
+    Tile *loneTile3 = tileset->findTile(3);
+    QVERIFY(loneTile3);
+    QVERIFY(ws->wangIdOfTile(loneTile3).isEmpty());
+}
+
+void test_MapReader::roundTripTmxCellBasedWangSet()
+{
+    MapReader reader;
+    auto tileset = reader.readTileset("../wangtiles/cellbased_grass_and_water.tsx");
+    QVERIFY(tileset.data());
+
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    MapWriter writer;
+    writer.writeTileset(*tileset, &buffer);
+    buffer.close();
+
+    const QByteArray xmlData = buffer.data();
+    QVERIFY(xmlData.contains("cellbased=\"1\""));
+    QVERIFY(xmlData.contains("center=\"1\""));
+    QVERIFY(xmlData.contains("center=\"2\""));
+
+    buffer.open(QIODevice::ReadOnly);
+    auto roundTripTileset = reader.readTileset(&buffer, "../wangtiles/");
+    QVERIFY(roundTripTileset.data());
+    QCOMPARE(roundTripTileset->wangSetCount(), 1);
+
+    WangSet *ws = roundTripTileset->wangSet(0);
+    QVERIFY(ws->isCellBased());
+    QCOMPARE(ws->centerColor(0), 1);
+    QCOMPARE(ws->centerColor(3), 1);
+    QCOMPARE(ws->centerColor(22), 2);
+    QCOMPARE(ws->centerColor(23), 2);
+}
+
+void test_MapReader::roundTripJsonCellBasedWangSet()
+{
+    MapReader reader;
+    auto tileset = reader.readTileset("../wangtiles/cellbased_grass_and_water.tsx");
+    QVERIFY(tileset.data());
+
+    MapToVariantConverter toVariant;
+    const QVariant tsVariant = toVariant.toVariant(*tileset);
+    const QVariantMap tsMap = tsVariant.toMap();
+    const QVariantList wsList = tsMap.value(QStringLiteral("wangsets")).toList();
+    QCOMPARE(wsList.size(), 1);
+
+    const QVariantMap wsMap = wsList.at(0).toMap();
+    QVERIFY(wsMap.value(QStringLiteral("cellbased")).toBool());
+
+    const QVariantList wtList = wsMap.value(QStringLiteral("wangtiles")).toList();
+    bool foundCenter1 = false;
+    bool foundCenter2 = false;
+    for (const QVariant &wtVar : wtList) {
+        const QVariantMap wtMap = wtVar.toMap();
+        if (wtMap.value(QStringLiteral("tileid")).toInt() == 3) {
+            QCOMPARE(wtMap.value(QStringLiteral("center")).toInt(), 1);
+            foundCenter1 = true;
+        }
+        if (wtMap.value(QStringLiteral("tileid")).toInt() == 23) {
+            QCOMPARE(wtMap.value(QStringLiteral("center")).toInt(), 2);
+            foundCenter2 = true;
+        }
+    }
+    QVERIFY(foundCenter1);
+    QVERIFY(foundCenter2);
+
+    VariantToMapConverter toMap;
+    auto jsonTileset = toMap.toTileset(tsVariant);
+    QVERIFY(jsonTileset.data());
+    QCOMPARE(jsonTileset->wangSetCount(), 1);
+    WangSet *jsonWs = jsonTileset->wangSet(0);
+    QVERIFY(jsonWs->isCellBased());
+    QCOMPARE(jsonWs->centerColor(0), 1);
+    QCOMPARE(jsonWs->centerColor(3), 1);
+    QCOMPARE(jsonWs->centerColor(22), 2);
+    QCOMPARE(jsonWs->centerColor(23), 2);
+}
+
+void test_MapReader::classicWangSetSerializationIdentical()
+{
+    MapReader reader;
+    auto classicTileset = reader.readTileset("../wangtiles/grassAndWater.tsx");
+    QVERIFY(classicTileset.data());
+    QCOMPARE(classicTileset->wangSetCount(), 1);
+    QVERIFY(!classicTileset->wangSet(0)->isCellBased());
+
+    // TMX serialization should never contain cellbased or center
+    QBuffer buffer;
+    buffer.open(QIODevice::WriteOnly);
+    MapWriter writer;
+    writer.writeTileset(*classicTileset, &buffer);
+    buffer.close();
+
+    const QByteArray xmlData = buffer.data();
+    QVERIFY(!xmlData.contains("cellbased"));
+    QVERIFY(!xmlData.contains("center="));
+
+    // JSON serialization should never contain cellbased or center
+    MapToVariantConverter toVariant;
+    const QVariant tsVariant = toVariant.toVariant(*classicTileset);
+    const QVariantMap tsMap = tsVariant.toMap();
+    const QVariantList wsList = tsMap.value(QStringLiteral("wangsets")).toList();
+    QCOMPARE(wsList.size(), 1);
+    const QVariantMap wsMap = wsList.at(0).toMap();
+    QVERIFY(!wsMap.contains(QStringLiteral("cellbased")));
+
+    const QVariantList wtList = wsMap.value(QStringLiteral("wangtiles")).toList();
+    for (const QVariant &wtVar : wtList) {
+        const QVariantMap wtMap = wtVar.toMap();
+        QVERIFY(!wtMap.contains(QStringLiteral("center")));
+    }
 }
 
 QTEST_MAIN(test_MapReader)

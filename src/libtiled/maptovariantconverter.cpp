@@ -406,6 +406,8 @@ QVariant MapToVariantConverter::toVariant(const WangSet &wangSet) const
         wangSetVariant[QStringLiteral("class")] = wangSet.className();
     wangSetVariant[QStringLiteral("type")] = wangSetTypeToString(wangSet.type());
     wangSetVariant[QStringLiteral("tile")] = wangSet.imageTileId();
+    if (wangSet.isCellBased())
+        wangSetVariant[QStringLiteral("cellbased")] = true;
 
     QVariantList colorVariants;
     for (int i = 1; i <= wangSet.colorCount(); ++i)
@@ -423,6 +425,8 @@ QVariant MapToVariantConverter::toVariant(const WangSet &wangSet) const
 
         wangTileVariant[QStringLiteral("wangid")] = wangIdVariant;
         wangTileVariant[QStringLiteral("tileid")] = wangTile.tileId();
+        if (wangSet.isCellBased() && wangTile.centerColor() > 0)
+            wangTileVariant[QStringLiteral("center")] = wangTile.centerColor();
 
         wangTileVariants.append(wangTileVariant);
     }

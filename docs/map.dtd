@@ -64,7 +64,7 @@
   compression CDATA   #IMPLIED
 >
 
-<!ELEMENT tileset (image*, tile*)>
+<!ELEMENT tileset (image*, tile*, wangsets?)>
 <!--
   name REQUIRED only if source tsx not present
   source here refers to a TSX
@@ -115,6 +115,32 @@
   y           CDATA   #IMPLIED
   opacity     CDATA   #IMPLIED
   visible     (0 | 1) #IMPLIED
+>
+
+<!ELEMENT wangsets (wangset*)>
+<!ELEMENT wangset (properties?, wangcolor*, wangtile*)>
+<!ATTLIST wangset
+  name        CDATA   #REQUIRED
+  class       CDATA   #IMPLIED
+  type        (corner | edge | mixed) #REQUIRED
+  tile        CDATA   #REQUIRED
+  cellbased   (0 | 1) #IMPLIED
+>
+
+<!ELEMENT wangcolor (properties?)>
+<!ATTLIST wangcolor
+  name        CDATA   #REQUIRED
+  class       CDATA   #IMPLIED
+  color       CDATA   #REQUIRED
+  tile        CDATA   #REQUIRED
+  probability CDATA   #IMPLIED
+>
+
+<!ELEMENT wangtile EMPTY>
+<!ATTLIST wangtile
+  tileid      CDATA   #REQUIRED
+  wangid      CDATA   #REQUIRED
+  center      CDATA   #IMPLIED
 >
 
 <!ELEMENT object (properties?)>

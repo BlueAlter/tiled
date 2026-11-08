@@ -678,6 +678,7 @@ Wang Set
     tile,             int,              "Local ID of tile representing the Wang set"
     type,             string,           "``corner``, ``edge`` or ``mixed`` (since 1.5)"
     wangtiles,        array,            "Array of :ref:`Wang tiles <json-wangtile>`"
+    cellbased,        bool,             "Whether this Wang set is cell-based (since 1.13, optional, default: false)"
 
 .. _json-wangcolor:
 
@@ -717,6 +718,7 @@ Wang Tile
 
     tileid,           int,              "Local ID of tile"
     wangid,           array,            "Array of Wang color indexes (``uchar[8]``)"
+    center,           int,              "Index of the center terrain color in cell-based Wang sets (since 1.13, optional, default: 0)"
 
 Example:
 
@@ -807,6 +809,12 @@ A point on a polygon or a polyline, relative to the position of the object.
 
 Changelog
 ---------
+
+Tiled 1.13
+~~~~~~~~~~
+
+* Added ``cellbased`` property to :ref:`json-wangset` to enable cell-based terrain sets.
+* Added ``center`` property to :ref:`json-wangtile` to specify the center terrain color in cell-based Wang sets.
 
 Tiled 1.12
 ~~~~~~~~~~

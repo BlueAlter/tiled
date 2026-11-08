@@ -484,6 +484,7 @@ std::unique_ptr<WangSet> VariantToMapConverter::toWangSet(const QVariantMap &var
 
     wangSet->setClassName(variantMap[QStringLiteral("class")].toString());
     wangSet->setProperties(extractProperties(variantMap));
+    wangSet->setCellBased(variantMap.value(QStringLiteral("cellbased")).toBool());
 
     const QVariantList colorVariants = variantMap[QStringLiteral("colors")].toList();
     for (const QVariant &colorVariant : colorVariants)
@@ -540,6 +541,17 @@ std::unique_ptr<WangSet> VariantToMapConverter::toWangSet(const QVariantMap &var
         }
 
         wangSet->setWangId(tileId, wangId);
+
+        if (wangTileVariantMap.contains(QStringLiteral("center"))) {
+            bool centerOk = true;
+            const int center = wangTileVariantMap[QStringLiteral("center")].toInt(&centerOk);
+            if (!centerOk || center < 0 || center > wangSet->colorCount()) {
+                mError = QStringLiteral("Invalid center color given for tileId: ") + QString::number(tileId);
+                return nullptr;
+            }
+            if (center > 0)
+                wangSet->setCenterColor(tileId, center);
+        }
     }
 
 

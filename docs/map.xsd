@@ -259,6 +259,43 @@
           </xs:complexType>
         </xs:element>
         <xs:element ref="properties" minOccurs="0" maxOccurs="1"/>
+        <xs:element name="wangsets" minOccurs="0" maxOccurs="1">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="wangset" minOccurs="0" maxOccurs="unbounded">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element ref="properties" minOccurs="0" maxOccurs="1"/>
+                    <xs:element name="wangcolor" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element ref="properties" minOccurs="0" maxOccurs="1"/>
+                        </xs:sequence>
+                        <xs:attribute name="name" type="xs:string" use="required"/>
+                        <xs:attribute name="class" type="xs:string"/>
+                        <xs:attribute name="color" type="xs:string" use="required"/>
+                        <xs:attribute name="tile" type="xs:int" use="required"/>
+                        <xs:attribute name="probability" type="xs:double"/>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="wangtile" minOccurs="0" maxOccurs="unbounded">
+                      <xs:complexType>
+                        <xs:attribute name="tileid" type="xs:int" use="required"/>
+                        <xs:attribute name="wangid" type="xs:string" use="required"/>
+                        <xs:attribute name="center" type="xs:int"/>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="name" type="xs:string" use="required"/>
+                  <xs:attribute name="class" type="xs:string"/>
+                  <xs:attribute name="type" type="xs:string" use="required"/>
+                  <xs:attribute name="tile" type="xs:int" use="required"/>
+                  <xs:attribute name="cellbased" type="xs:boolean"/>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
         <xs:element name="terraintypes">
           <xs:complexType>
             <xs:sequence>

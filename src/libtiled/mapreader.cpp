@@ -768,6 +768,8 @@ void MapReaderPrivate::readTilesetWangSets(Tileset &tileset)
 
             auto wangSet = std::make_unique<WangSet>(&tileset, name, type, tileId);
             wangSet->setClassName(className);
+            const bool cellBased = atts.value(QLatin1String("cellbased")).toInt() != 0;
+            wangSet->setCellBased(cellBased);
 
             // For backwards-compatibility
             QVector<int> cornerColors;
@@ -807,6 +809,17 @@ void MapReaderPrivate::readTilesetWangSets(Tileset &tileset)
                         }
                     }
 
+                    int center = 0;
+                    if (tileAtts.hasAttribute(QLatin1String("center"))) {
+                        bool centerOk = true;
+                        center = tileAtts.value(QLatin1String("center")).toInt(&centerOk);
+                        if (!centerOk || center < 0) {
+                            xml.raiseError(QStringLiteral("Invalid center color \"%1\" given for tileId %2").arg(tileAtts.value(QLatin1String("center")).toString(),
+                                                                                                                   QString::number(tileId)));
+                            return;
+                        }
+                    }
+
                     if (!wangSet->wangIdIsValid(wangId) || !ok) {
                         xml.raiseError(QStringLiteral("Invalid wangId \"%1\" given for tileId %2").arg(wangIdString.toString(),
                                                                                                        QString::number(tileId)));
@@ -814,6 +827,8 @@ void MapReaderPrivate::readTilesetWangSets(Tileset &tileset)
                     }
 
                     wangSet->setWangId(tileId, wangId);
+                    if (center > 0)
+                        wangSet->setCenterColor(tileId, center);
 
                     xml.skipCurrentElement();
                 } else if (xml.name() == QLatin1String("wangcolor") || isCorner || isEdge) {
@@ -854,6 +869,15 @@ void MapReaderPrivate::readTilesetWangSets(Tileset &tileset)
                 wangSet->setType(WangSet::Edge);
             if (edgeColors.isEmpty() && !cornerColors.isEmpty())
                 wangSet->setType(WangSet::Corner);
+
+            if (wangSet->isCellBased()) {
+                for (auto it = wangSet->centerColorByTileId().constBegin(); it != wangSet->centerColorByTileId().constEnd(); ++it) {
+                    if (it.value() > wangSet->colorCount()) {
+                        xml.raiseError(QStringLiteral("Center color %1 exceeds color count %2 for tileId %3").arg(it.value()).arg(wangSet->colorCount()).arg(it.key()));
+                        return;
+                    }
+                }
+            }
 
             tileset.addWangSet(std::move(wangSet));
         } else {
