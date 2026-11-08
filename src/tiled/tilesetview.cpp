@@ -282,7 +282,7 @@ void TileDelegate::drawWangOverlay(QPainter *painter,
     const int tileCenterColor = wangSet->centerColor(tile->id());
 
     paintWangOverlay(painter,
-                     wangSet->wangIdOfTile(tile) & wangSet->typeMask(),
+                     wangSet->wangIdOfTile(tile),
                      *wangSet,
                      targetRect,
                      WO_TransparentFill | WO_Shadow | WO_Outline,
@@ -290,12 +290,34 @@ void TileDelegate::drawWangOverlay(QPainter *painter,
 
     if (mTilesetView->hoveredIndex() == index) {
         qreal opacity = painter->opacity();
-        painter->setOpacity(0.5);
-        int hoverCenterColor = 0;
-        if (mTilesetView->isHoveringCenter() && mTilesetView->currentWangBehavior() != TilesetView::AssignWholeId)
-            hoverCenterColor = mTilesetView->currentWangColorIndex() ? mTilesetView->currentWangColorIndex() : WangId::INDEX_MASK;
+        painter->setOpacity(0.6);
 
-        paintWangOverlay(painter, mTilesetView->wangId(),
+        WangId hoverWangId;
+        int hoverCenterColor = 0;
+
+        if (mTilesetView->currentWangBehavior() == TilesetView::AssignWholeId) {
+            hoverWangId = mTilesetView->wangId();
+        } else {
+            const int hoverX = mTilesetView->hoverGridX();
+            const int hoverY = mTilesetView->hoverGridY();
+            if (hoverX >= 0 && hoverY >= 0) {
+                int hoverColor = 0;
+                if (mTilesetView->isErasing()) {
+                    hoverColor = -1; // Red erase indicator
+                } else {
+                    hoverColor = mTilesetView->currentWangColorIndex() ? mTilesetView->currentWangColorIndex()
+                                                                       : (int)WangId::INDEX_MASK;
+                }
+
+                if (hoverX == 1 && hoverY == 1) {
+                    hoverCenterColor = hoverColor;
+                } else {
+                    hoverWangId.setIndexColor(WangId::indexByGrid(hoverX, hoverY), hoverColor);
+                }
+            }
+        }
+
+        paintWangOverlay(painter, hoverWangId,
                          *wangSet,
                          targetRect,
                          WangOverlayOptions(),
@@ -600,7 +622,27 @@ QIcon TilesetView::imageMissingIcon() const
 void TilesetView::mousePressEvent(QMouseEvent *event)
 {
     if (mEditWangSet) {
+        if (event->button() == Qt::RightButton) {
+            if (event->modifiers() & Qt::ControlModifier) {
+                QTableView::mousePressEvent(event);
+                return;
+            }
+            if (event->modifiers() & Qt::ShiftModifier) {
+                const QModelIndex index = indexAt(event->pos());
+                if (index.isValid()) {
+                    if (Tile *tile = tilesetModel()->tileAt(index)) {
+                        fillTileWithTerrain(tile, 0);
+                        return;
+                    }
+                }
+            }
+            mErasingWithRightButton = true;
+            mouseMoveEvent(event);
+            return;
+        }
+
         if (event->button() == Qt::LeftButton) {
+            mErasingWithRightButton = false;
             if ((event->modifiers() & Qt::ShiftModifier) && mWangBehavior != AssignWholeId) {
                 const QModelIndex index = indexAt(event->pos());
                 if (index.isValid()) {
@@ -611,6 +653,7 @@ void TilesetView::mousePressEvent(QMouseEvent *event)
                 }
             }
             mouseMoveEvent(event);
+            return;
         }
 
         return;
@@ -634,8 +677,9 @@ void TilesetView::mouseMoveEvent(QMouseEvent *event)
     const QModelIndex previousHoveredIndex = mHoveredIndex;
     mHoveredIndex = hoveredIndex;
 
+    int hoverGridX = -1;
+    int hoverGridY = -1;
     WangId wangId;
-    bool hoveringCenter = false;
 
     if (mWangBehavior == AssignWholeId) {
         wangId = mWangId;
@@ -650,56 +694,23 @@ void TilesetView::mouseMoveEvent(QMouseEvent *event)
             QPointF tileLocalPosF((qreal) tileLocalPos.x() / tileRect.width(),
                                   (qreal) tileLocalPos.y() / tileRect.height());
 
-            const int x = qBound(0, qFloor(tileLocalPosF.x() * 3), 2);
-            const int y = qBound(0, qFloor(tileLocalPosF.y() * 3), 2);
-            WangId::Index index = WangId::indexByGrid(x, y);
+            hoverGridX = qBound(0, qFloor(tileLocalPosF.x() * 3), 2);
+            hoverGridY = qBound(0, qFloor(tileLocalPosF.y() * 3), 2);
 
-            if (index == WangId::NumIndexes) {
-                hoveringCenter = true;
-            } else {
-                switch (mWangSet->type()) {
-                case WangSet::Edge:
-                    tileLocalPosF -= QPointF(0.5, 0.5);
-
-                    if (tileLocalPosF.x() < tileLocalPosF.y()) {
-                        if (tileLocalPosF.x() > -tileLocalPosF.y())
-                            index = WangId::Bottom;
-                        else
-                            index = WangId::Left;
-                    } else {
-                        if (tileLocalPosF.x() > -tileLocalPosF.y())
-                            index = WangId::Right;
-                        else
-                            index = WangId::Top;
-                    }
-                    break;
-                case WangSet::Corner:
-                    if (tileLocalPosF.x() > 0.5) {
-                        if (tileLocalPosF.y() > 0.5)
-                            index = WangId::BottomRight;
-                        else
-                            index = WangId::TopRight;
-                    } else {
-                        if (tileLocalPosF.y() > 0.5)
-                            index = WangId::BottomLeft;
-                        else
-                            index = WangId::TopLeft;
-                    }
-                    break;
-                case WangSet::Mixed:
-                    break;
-                }
-
-                wangId.setIndexColor(index, mWangColorIndex ? mWangColorIndex
-                                                            : WangId::INDEX_MASK);
+            if (hoverGridX != 1 || hoverGridY != 1) {
+                const WangId::Index index = WangId::indexByGrid(hoverGridX, hoverGridY);
+                int hoverColor = isErasing() ? -1 : (mWangColorIndex ? mWangColorIndex : (int)WangId::INDEX_MASK);
+                wangId.setIndexColor(index, hoverColor);
             }
         }
     }
 
-    const bool centerChanged = (mHoveringCenter != hoveringCenter);
-    mHoveringCenter = hoveringCenter;
+    const bool gridChanged = (mHoverGridX != hoverGridX || mHoverGridY != hoverGridY);
+    mHoverGridX = hoverGridX;
+    mHoverGridY = hoverGridY;
+    mHoveringCenter = (hoverGridX == 1 && hoverGridY == 1);
 
-    if (previousHoveredIndex != mHoveredIndex || wangId != mWangId || centerChanged) {
+    if (previousHoveredIndex != mHoveredIndex || wangId != mWangId || gridChanged) {
         mWangId = wangId;
 
         if (previousHoveredIndex.isValid())
@@ -708,15 +719,18 @@ void TilesetView::mouseMoveEvent(QMouseEvent *event)
             update(mHoveredIndex);
     }
 
-    if (event->buttons() & Qt::LeftButton)
+    if (event->buttons() & (Qt::LeftButton | Qt::RightButton))
         applyWangId();
 }
 
 void TilesetView::mouseReleaseEvent(QMouseEvent *event)
 {
     if (mEditWangSet) {
-        if (event->button() == Qt::LeftButton)
+        if (event->button() == Qt::LeftButton || event->button() == Qt::RightButton) {
             finishWangIdChange();
+            mErasingWithRightButton = false;
+            update();
+        }
 
         return;
     }
@@ -727,6 +741,9 @@ void TilesetView::mouseReleaseEvent(QMouseEvent *event)
 void TilesetView::leaveEvent(QEvent *event)
 {
     mHoveringCenter = false;
+    mHoverGridX = -1;
+    mHoverGridY = -1;
+    mErasingWithRightButton = false;
     if (mHoveredIndex.isValid()) {
         const QModelIndex previousHoveredIndex = mHoveredIndex;
         mHoveredIndex = QModelIndex();
@@ -790,6 +807,11 @@ void TilesetView::wheelEvent(QWheelEvent *event)
  */
 void TilesetView::contextMenuEvent(QContextMenuEvent *event)
 {
+    if (mEditWangSet && !(QGuiApplication::keyboardModifiers() & Qt::ControlModifier) && !mErasingWithRightButton) {
+        event->accept();
+        return;
+    }
+
     const QModelIndex index = indexAt(event->pos());
     const TilesetModel *model = tilesetModel();
     if (!model)
@@ -1045,6 +1067,31 @@ void TilesetView::fillTileWithTerrain(Tile *tile, int color)
     update();
 }
 
+void TilesetView::assignCellColor(Tile *tile, int gridX, int gridY, int color)
+{
+    if (!mTilesetDocument || !mWangSet || !tile)
+        return;
+
+    if (gridX == 1 && gridY == 1) {
+        assignCenterColor(tile, color);
+        return;
+    }
+
+    const WangId::Index index = WangId::indexByGrid(gridX, gridY);
+    WangId currentWangId = mWangSet->wangIdOfTile(tile);
+    if (currentWangId.indexColor(index) == color)
+        return;
+
+    WangId newWangId = currentWangId;
+    newWangId.setIndexColor(index, color);
+
+    mTilesetDocument->undoStack()->push(new ChangeTileWangId(
+            mTilesetDocument, mWangSet, tile,
+            newWangId, mWangSet->centerColor(tile->id())));
+    mWangIdChanged = true;
+    update(mHoveredIndex);
+}
+
 void TilesetView::applyWangId()
 {
     if (!mHoveredIndex.isValid() || !mWangSet)
@@ -1054,37 +1101,21 @@ void TilesetView::applyWangId()
     if (!tile)
         return;
 
-    if (mHoveringCenter && mWangBehavior != AssignWholeId) {
-        assignCenterColor(tile, mWangColorIndex);
-        return;
-    }
-
-    WangId previousWangId = mWangSet->wangIdOfTile(tile);
-    WangId newWangId = previousWangId;
-
     if (mWangBehavior == AssignWholeId) {
-        newWangId = mWangId;
-    } else {
-        for (int i = 0; i < WangId::NumIndexes; ++i) {
-            if (mWangId.indexColor(i))
-                newWangId.setIndexColor(i, mWangColorIndex);
-        }
+        WangId previousWangId = mWangSet->wangIdOfTile(tile);
+        if (mWangId == previousWangId)
+            return;
+
+        mTilesetDocument->undoStack()->push(new ChangeTileWangId(
+                mTilesetDocument, mWangSet, tile, mWangId));
+        mWangIdChanged = true;
+        return;
     }
 
-    if (newWangId == previousWangId)
-        return;
-
-    bool wasUnused = !mWangSet->wangIdIsUsed(newWangId);
-
-    QUndoCommand *command = new ChangeTileWangId(mTilesetDocument, mWangSet, tile, newWangId);
-    mTilesetDocument->undoStack()->push(command);
-    mWangIdChanged = true;
-
-    if (!mWangSet->wangIdIsUsed(previousWangId))
-        emit wangIdUsedChanged(previousWangId);
-
-    if (wasUnused)
-        emit wangIdUsedChanged(newWangId);
+    if (mHoverGridX >= 0 && mHoverGridY >= 0) {
+        const int colorToAssign = isErasing() ? 0 : mWangColorIndex;
+        assignCellColor(tile, mHoverGridX, mHoverGridY, colorToAssign);
+    }
 }
 
 void TilesetView::finishWangIdChange()

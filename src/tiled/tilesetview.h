@@ -100,7 +100,10 @@ public:
     };
 
     QModelIndex hoveredIndex() const { return mHoveredIndex; }
-    bool isHoveringCenter() const { return mHoveringCenter; }
+    int hoverGridX() const { return mHoverGridX; }
+    int hoverGridY() const { return mHoverGridY; }
+    bool isHoveringCenter() const { return mHoverGridX == 1 && mHoverGridY == 1; }
+    bool isErasing() const { return mErasingWithRightButton || (mWangColorIndex == 0); }
     int currentWangColorIndex() const { return mWangColorIndex; }
     WangBehavior currentWangBehavior() const { return mWangBehavior; }
 
@@ -132,6 +135,7 @@ private:
     void selectWangSetImage();
     void selectWangColorImage();
     void assignCenterColor(Tile *tile, int color);
+    void assignCellColor(Tile *tile, int gridX, int gridY, int color);
     void fillTileWithTerrain(Tile *tile, int color);
     void editTileProperties();
     void swapTiles();
@@ -162,6 +166,9 @@ private:
     WangId mWangId;
     int mWangColorIndex = 0;
     bool mHoveringCenter = false;
+    int mHoverGridX = -1;
+    int mHoverGridY = -1;
+    bool mErasingWithRightButton = false;
     QModelIndex mHoveredIndex;
     bool mWangIdChanged = false;
 
