@@ -1020,6 +1020,7 @@ void TilesetEditor::addWangSet(WangSet::Type type)
     auto *wangSet = new WangSet(tileset, QString(), type);
     wangSet->setName(tr("Unnamed Set"));
     wangSet->setColorCount(1);
+    wangSet->setCellBased(true);
 
     mCurrentTilesetDocument->undoStack()->push(new AddWangSet(mCurrentTilesetDocument,
                                                               wangSet));

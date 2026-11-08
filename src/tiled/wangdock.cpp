@@ -39,6 +39,7 @@
 #include "utils.h"
 
 #include <QAction>
+#include <QCheckBox>
 #include <QComboBox>
 #include <QEvent>
 #include <QBoxLayout>
@@ -265,19 +266,39 @@ WangDock::WangDock(QWidget *parent)
 
     mWangColorWidget = new QWidget;
 
-    // Center terrain selection, only used by cell-based terrain sets.
-    mCenterColorLabel = new QLabel(mWangColorWidget);
+    // Center terrain selection and toggle, used for Godot-style terrain sets.
+    mCenterTerrainCheck = new QCheckBox(mWangColorWidget);
+    mCenterTerrainCheck->setText(tr("Center Terrain:"));
+    mCenterTerrainCheck->setToolTip(tr("Enable Center Terrain cell for this terrain set (like Godot 4)"));
+
     mCenterColorCombo = new QComboBox(mWangColorWidget);
     mCenterColorCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
     QHBoxLayout *centerColorLayout = new QHBoxLayout;
-    centerColorLayout->setContentsMargins(0, 0, 0, 0);
-    centerColorLayout->addWidget(mCenterColorLabel);
+    centerColorLayout->setContentsMargins(0, 2, 0, 2);
+    centerColorLayout->addWidget(mCenterTerrainCheck);
     centerColorLayout->addWidget(mCenterColorCombo, 1);
 
     mCenterColorWidget = new QWidget(mWangColorWidget);
     mCenterColorWidget->setLayout(centerColorLayout);
     mCenterColorWidget->setVisible(false);
+
+    connect(mCenterTerrainCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        if (mInitializing || !mCurrentWangSet)
+            return;
+
+        if (mCurrentWangSet->isCellBased() == checked)
+            return;
+
+        if (TilesetDocument *tilesetDocument = qobject_cast<TilesetDocument*>(mDocument)) {
+            tilesetDocument->undoStack()->push(new ChangeWangSetCellBased(tilesetDocument,
+                                                                          mCurrentWangSet,
+                                                                          checked));
+        } else {
+            mCurrentWangSet->setCellBased(checked);
+            refreshCenterColorCombo();
+        }
+    });
 
     connect(mCenterColorCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int index) {
@@ -561,13 +582,16 @@ void WangDock::wangSetChanged(WangSet *wangSet)
 
 void WangDock::refreshCenterColorCombo()
 {
-    QSignalBlocker blocker(mCenterColorCombo);
+    QSignalBlocker checkBlocker(mCenterTerrainCheck);
+    QSignalBlocker comboBlocker(mCenterColorCombo);
 
-    const bool cellBased = mCurrentWangSet && mCurrentWangSet->isCellBased();
-    mCenterColorWidget->setVisible(cellBased);
-    mCenterColorCombo->clear();
+    const bool hasSet = (mCurrentWangSet != nullptr);
+    mCenterColorWidget->setVisible(hasSet);
+    mCenterColorWidget->setEnabled(hasSet);
 
-    if (!cellBased) {
+    if (!hasSet) {
+        mCenterTerrainCheck->setChecked(false);
+        mCenterColorCombo->clear();
         if (mCurrentCenterColor != 0) {
             mCurrentCenterColor = 0;
             emit centerColorChanged(0);
@@ -575,6 +599,11 @@ void WangDock::refreshCenterColorCombo()
         return;
     }
 
+    const bool cellBased = mCurrentWangSet->isCellBased();
+    mCenterTerrainCheck->setChecked(cellBased);
+    mCenterColorCombo->setEnabled(cellBased);
+
+    mCenterColorCombo->clear();
     mCenterColorCombo->addItem(tr("None"), 0);
 
     for (int i = 1; i <= mCurrentWangSet->colorCount(); ++i) {
@@ -582,6 +611,15 @@ void WangDock::refreshCenterColorCombo()
         QPixmap swatch(16, 16);
         swatch.fill(wangColor->color());
         mCenterColorCombo->addItem(QIcon(swatch), wangColor->name(), i);
+    }
+
+    if (!cellBased) {
+        if (mCurrentCenterColor != 0) {
+            mCurrentCenterColor = 0;
+            emit centerColorChanged(0);
+        }
+        mCenterColorCombo->setCurrentIndex(0);
+        return;
     }
 
     int index = mCenterColorCombo->findData(mCurrentCenterColor);
@@ -747,13 +785,14 @@ void WangDock::retranslateUi()
     mNewWangSetButton->setToolTip(tr("Add Terrain Set"));
     mAddCornerWangSet->setText(tr("New Corner Set"));
     mAddEdgeWangSet->setText(tr("New Edge Set"));
-    mAddMixedWangSet->setText(tr("New Mixed Set"));
+    mAddMixedWangSet->setText(tr("New Mixed Set (Corners, Sides & Center)"));
     mDuplicateWangSet->setText(tr("Duplicate Terrain Set"));
     mRemoveWangSet->setText(tr("Remove Terrain Set"));
     mAddColor->setText(tr("Add Terrain"));
     mRemoveColor->setText(tr("Remove Terrain"));
 
-    mCenterColorLabel->setText(tr("Center:"));
+    mCenterTerrainCheck->setText(tr("Center Cell (Terrain):"));
+    mCenterTerrainCheck->setToolTip(tr("Enable Center Terrain cell for this terrain set (like Godot 4)"));
     mCenterColorCombo->setToolTip(tr("Center terrain to paint with the Terrain Brush"));
 
     mTemplateAndColorView->setTabText(0, tr("Terrains"));

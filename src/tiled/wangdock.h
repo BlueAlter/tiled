@@ -25,8 +25,8 @@
 
 #include "wangset.h"
 
+class QCheckBox;
 class QComboBox;
-class QLabel;
 class QMenu;
 class QModelIndex;
 class QPushButton;
@@ -145,7 +145,7 @@ private:
     HasChildrenFilterModel *mWangSetProxyModel;
     QWidget *mWangColorWidget;
     QWidget *mCenterColorWidget;
-    QLabel *mCenterColorLabel;
+    QCheckBox *mCenterTerrainCheck;
     QComboBox *mCenterColorCombo;
     int mCurrentCenterColor = 0;
     WangTemplateView *mWangTemplateView;
