@@ -36,6 +36,7 @@
 #include "commandmanager.h"
 #include "consoledock.h"
 #include "documentmanager.h"
+#include "layerdefinitionseditor.h"
 #include "donationpopup.h"
 #include "exportasimagedialog.h"
 #include "exporthelper.h"
@@ -64,7 +65,6 @@
 #include "sentryhelper.h"
 #include "templatesdock.h"
 #include "entitywindow.h"
-#include "roomdesignerwindow.h"
 #include "tileset.h"
 #include "tilesetdock.h"
 #include "tilesetdocument.h"
@@ -223,6 +223,7 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     , mUi(new Ui::MainWindow)
     , mActionHandler(new MapDocumentActionHandler(this))
     , mPropertyTypesEditor(new PropertyTypesEditor(this))
+    , mLayerDefinitionsEditor(new LayerDefinitionsEditor(this))
     , mEntityWindow(new EntityWindow(this))
     , mAutomappingManager(new AutomappingManager(this))
     , mDocumentManager(nullptr)
@@ -795,6 +796,9 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     mShowPropertyTypesEditor = new QAction(tr("Custom Types Editor"), this);
     mShowPropertyTypesEditor->setCheckable(true);
 
+    mShowLayerDefinitionsEditor = new QAction(tr("Project Layers"), this);
+    mShowLayerDefinitionsEditor->setCheckable(true);
+
     mShowEntityWindow = new QAction(tr("Entities"), this);
     mShowEntityWindow->setCheckable(true);
 
@@ -802,11 +806,13 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     ActionManager::registerAction(mResetToDefaultLayout, "ResetToDefaultLayout");
     ActionManager::registerAction(mLockLayout, "LockLayout");
     ActionManager::registerAction(mShowPropertyTypesEditor, "CustomTypesEditor");
+    ActionManager::registerAction(mShowLayerDefinitionsEditor, "ProjectLayersEditor");
     ActionManager::registerAction(mShowEntityWindow, "EntityWindow");
 
 
     mUi->menuView->insertAction(mUi->actionSearchActions, mViewsAndToolbarsAction);
     mUi->menuView->insertAction(mUi->actionShowGrid, mShowPropertyTypesEditor);
+    menuBar()->addAction(mShowLayerDefinitionsEditor);
     mUi->menuView->insertAction(mUi->actionShowGrid, mShowEntityWindow);
 
     mUi->menuView->insertSeparator(mUi->actionShowGrid);
@@ -829,6 +835,11 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             mPropertyTypesEditor, &QWidget::setVisible);
     connect(mPropertyTypesEditor, &PropertyTypesEditor::closed,
             this, &MainWindow::onPropertyTypesEditorClosed);
+
+    connect(mShowLayerDefinitionsEditor, &QAction::toggled,
+            mLayerDefinitionsEditor, &QWidget::setVisible);
+    connect(mLayerDefinitionsEditor, &LayerDefinitionsEditor::closed,
+            this, &MainWindow::onLayerDefinitionsEditorClosed);
 
     connect(mShowEntityWindow, &QAction::toggled,
             mEntityWindow, &QWidget::setVisible);
@@ -2089,6 +2100,11 @@ void MainWindow::onPropertyTypesEditorClosed()
     mShowPropertyTypesEditor->setChecked(false);
 }
 
+void MainWindow::onLayerDefinitionsEditorClosed()
+{
+    mShowLayerDefinitionsEditor->setChecked(false);
+}
+
 void MainWindow::ensureHasBorderInFullScreen()
 {
 #ifdef Q_OS_WIN
@@ -2289,6 +2305,7 @@ void MainWindow::updateActions()
     mUi->actionRefreshProjectFolders->setEnabled(projectHasFolders);
     mUi->actionProjectProperties->setEnabled(hasProject);
     mShowPropertyTypesEditor->setEnabled(hasProject);
+    mShowLayerDefinitionsEditor->setEnabled(hasProject);
 }
 
 void MainWindow::updateZoomable()

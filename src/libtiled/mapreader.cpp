@@ -866,6 +866,7 @@ static void readLayerAttributes(Layer &layer,
                                 const QXmlStreamAttributes &atts)
 {
     layer.setClassName(atts.value(QLatin1String("class")).toString());
+    layer.setDefinitionId(atts.value(QLatin1String("definitionid")).toString());
 
     bool ok;
     if (const int id = atts.value(QLatin1String("id")).toInt(&ok); ok)

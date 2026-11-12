@@ -115,6 +115,8 @@ DynamicLibrary {
         "isometricrenderer.h",
         "layer.cpp",
         "layer.h",
+        "layerdefinition.cpp",
+        "layerdefinition.h",
         "logginginterface.cpp",
         "logginginterface.h",
         "map.cpp",

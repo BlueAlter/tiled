@@ -24,6 +24,7 @@
 #include "changelayer.h"
 #include "grouplayer.h"
 #include "layer.h"
+#include "layerdefinitioninstantiator.h"
 #include "map.h"
 #include "mapdocument.h"
 #include "reparentlayers.h"
@@ -213,8 +214,11 @@ Qt::ItemFlags LayerModel::flags(const QModelIndex &index) const
     if (index.column() == 1 || index.column() == 2)
         rc |= Qt::ItemIsUserCheckable;
 
-    if (index.column() == 0)
-        rc |= Qt::ItemIsEditable;
+    if (index.column() == 0) {
+        Layer *nameLayer = toLayer(index);
+        if (!nameLayer || !LayerDefinitionInstantiator::isLayerProtected(nameLayer))
+            rc |= Qt::ItemIsEditable;
+    }
 
     Layer *layer = toLayer(index);
 

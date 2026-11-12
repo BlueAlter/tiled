@@ -41,6 +41,7 @@
 #include "imagelayer.h"
 #include "issuesmodel.h"
 #include "layermodel.h"
+#include "layerdefinitioninstantiator.h"
 #include "logginginterface.h"
 #include "mapobject.h"
 #include "mapobjectmodel.h"
@@ -874,6 +875,12 @@ void MapDocument::removeLayers(const QList<Layer *> &layers)
     while (!layersToRemove.isEmpty()) {
         Layer *layer = layersToRemove.takeFirst();
         Q_ASSERT(layer->map() == mMap.get());
+
+        // Layers that come from a project-level LayerDefinition are
+        // structural and can't be removed from an individual map — but
+        // only while that definition still exists in the project.
+        if (LayerDefinitionInstantiator::isLayerProtected(layer))
+            continue;
 
         undoStack()->push(new RemoveLayer(this,
                                           layer->siblingIndex(),

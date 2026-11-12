@@ -604,6 +604,7 @@ std::unique_ptr<Layer> VariantToMapConverter::toLayer(const QVariant &variant)
     if (layer) {
         layer->setId(variantMap[QStringLiteral("id")].toInt());
         layer->setClassName(variantMap[QStringLiteral("class")].toString());
+        layer->setDefinitionId(variantMap[QStringLiteral("definitionid")].toString());
         layer->setOpacity(variantMap[QStringLiteral("opacity")].toReal());
         layer->setVisible(variantMap[QStringLiteral("visible")].toBool());
         layer->setLocked(variantMap[QStringLiteral("locked")].toBool());

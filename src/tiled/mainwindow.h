@@ -59,6 +59,7 @@ class MapDocumentActionHandler;
 class MapEditor;
 class MapScene;
 class MapView;
+class LayerDefinitionsEditor;
 class PropertyTypesEditor;
 class EntityWindow;
 class ProjectDock;
@@ -198,6 +199,7 @@ private:
     void autoMappingWarning(bool automatic);
 
     void onPropertyTypesEditorClosed();
+    void onLayerDefinitionsEditorClosed();
     void ensureHasBorderInFullScreen();
 
     /**
@@ -246,8 +248,8 @@ private:
     ProjectDock *mProjectDock;
     IssuesDock *mIssuesDock;
     PropertyTypesEditor *mPropertyTypesEditor;
+    LayerDefinitionsEditor *mLayerDefinitionsEditor;
     EntityWindow *mEntityWindow;
-    RoomDesignerWindow *mRoomDesignerWindow;
     QPointer<LocatorWidget> mLocatorWidget;
     QPointer<QWidget> mPopupWidget;
     double mPopupWidgetShowProgress = 1.0;
@@ -260,8 +262,8 @@ private:
     QMenu *mViewsAndToolbarsMenu;
     QAction *mViewsAndToolbarsAction;
     QAction *mShowPropertyTypesEditor;
+    QAction *mShowLayerDefinitionsEditor;
     QAction *mShowEntityWindow;
-    QAction *mShowRoomDesignerWindow;
     QAction *mResetToDefaultLayout;
     QAction *mLockLayout;
 
