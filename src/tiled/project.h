@@ -25,6 +25,7 @@
 #include "object.h"
 #include "tiled.h"
 #include "tilededitor_global.h"
+#include "tilesetregistry.h"
 
 #include <QDateTime>
 #include <QStringList>
@@ -55,6 +56,9 @@ public:
     LayerDefinitions &layerDefinitions() { return mLayerDefinitions; }
     const LayerDefinitions &layerDefinitions() const { return mLayerDefinitions; }
 
+    TilesetRegistry &tilesetRegistry() { return mTilesetRegistry; }
+    const TilesetRegistry &tilesetRegistry() const { return mTilesetRegistry; }
+
     /**
      * Global registry of tags available for use by LayerDefinitions (and,
      * later, other things like tilesets). Keeping this centralized means
@@ -79,6 +83,7 @@ private:
     QStringList mFolders;
     SharedPropertyTypes mPropertyTypes;
     LayerDefinitions mLayerDefinitions;
+    TilesetRegistry mTilesetRegistry;
     QStringList mTags;
 };
 

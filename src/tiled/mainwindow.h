@@ -61,6 +61,7 @@ class MapScene;
 class MapView;
 class LayerDefinitionsEditor;
 class PropertyTypesEditor;
+class TilesetRegistryEditor;
 class ProjectDock;
 class ProjectModel;
 class TilesetDocument;
@@ -199,6 +200,7 @@ private:
 
     void onPropertyTypesEditorClosed();
     void onLayerDefinitionsEditorClosed();
+    void onTilesetRegistryEditorClosed();
     void ensureHasBorderInFullScreen();
 
     /**
@@ -249,6 +251,7 @@ private:
     PropertyTypesEditor *mPropertyTypesEditor;
 
     LayerDefinitionsEditor *mLayerDefinitionsEditor;
+    TilesetRegistryEditor *mTilesetRegistryEditor;
 
     QPointer<LocatorWidget> mLocatorWidget;
     QPointer<QWidget> mPopupWidget;
@@ -264,6 +267,7 @@ private:
     QAction *mShowPropertyTypesEditor;
 
     QAction *mShowLayerDefinitionsEditor;
+    QAction *mShowTilesetRegistryEditor;
 
     QAction *mResetToDefaultLayout;
     QAction *mLockLayout;

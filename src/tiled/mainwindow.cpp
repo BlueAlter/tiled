@@ -37,6 +37,7 @@
 #include "consoledock.h"
 #include "documentmanager.h"
 #include "layerdefinitionseditor.h"
+#include "tilesetregistryeditor.h"
 #include "donationpopup.h"
 #include "exportasimagedialog.h"
 #include "exporthelper.h"
@@ -230,6 +231,8 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
 {
     Q_ASSERT(!mInstance);
     mInstance = this;
+
+    mTilesetRegistryEditor = new TilesetRegistryEditor(this);
 
     mUi->setupUi(this);
 
@@ -797,14 +800,19 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
     mShowLayerDefinitionsEditor = new QAction(tr("Project Layers"), this);
     mShowLayerDefinitionsEditor->setCheckable(true);
 
+    mShowTilesetRegistryEditor = new QAction(tr("Project Tilesets"), this);
+    mShowTilesetRegistryEditor->setCheckable(true);
+
     ActionManager::registerAction(mResetToDefaultLayout, "ResetToDefaultLayout");
     ActionManager::registerAction(mLockLayout, "LockLayout");
     ActionManager::registerAction(mShowPropertyTypesEditor, "CustomTypesEditor");
     ActionManager::registerAction(mShowLayerDefinitionsEditor, "ProjectLayersEditor");
+    ActionManager::registerAction(mShowTilesetRegistryEditor, "ProjectTilesetsEditor");
 
     mUi->menuView->insertAction(mUi->actionSearchActions, mViewsAndToolbarsAction);
     mUi->menuView->insertAction(mUi->actionShowGrid, mShowPropertyTypesEditor);
     menuBar()->addAction(mShowLayerDefinitionsEditor);
+    menuBar()->addAction(mShowTilesetRegistryEditor);
 
     mUi->menuView->insertSeparator(mUi->actionShowGrid);
 
@@ -831,6 +839,11 @@ MainWindow::MainWindow(QWidget *parent, Qt::WindowFlags flags)
             mLayerDefinitionsEditor, &QWidget::setVisible);
     connect(mLayerDefinitionsEditor, &LayerDefinitionsEditor::closed,
             this, &MainWindow::onLayerDefinitionsEditorClosed);
+
+    connect(mShowTilesetRegistryEditor, &QAction::toggled,
+            mTilesetRegistryEditor, &QWidget::setVisible);
+    connect(mTilesetRegistryEditor, &TilesetRegistryEditor::closed,
+            this, &MainWindow::onTilesetRegistryEditorClosed);
 
     connect(ClipboardManager::instance(), &ClipboardManager::hasMapChanged,
             this, &MainWindow::updateActions);
@@ -2091,6 +2104,11 @@ void MainWindow::onLayerDefinitionsEditorClosed()
     mShowLayerDefinitionsEditor->setChecked(false);
 }
 
+void MainWindow::onTilesetRegistryEditorClosed()
+{
+    mShowTilesetRegistryEditor->setChecked(false);
+}
+
 void MainWindow::ensureHasBorderInFullScreen()
 {
 #ifdef Q_OS_WIN
@@ -2292,6 +2310,7 @@ void MainWindow::updateActions()
     mUi->actionProjectProperties->setEnabled(hasProject);
     mShowPropertyTypesEditor->setEnabled(hasProject);
     mShowLayerDefinitionsEditor->setEnabled(hasProject);
+    mShowTilesetRegistryEditor->setEnabled(hasProject);
 }
 
 void MainWindow::updateZoomable()

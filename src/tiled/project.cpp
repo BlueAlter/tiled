@@ -79,6 +79,7 @@ bool Project::save(const QString &fileName)
     context.setRecursiveBehavior(ExportContext::RecursiveBehavior::TypedListValues);
     const QJsonArray projectProperties = propertiesToJson(properties(), context);
     const QJsonArray layerDefinitions = mLayerDefinitions.toJson(context);
+    const QJsonArray tilesetRegistry = mTilesetRegistry.toJson(dir);
     const QJsonArray tags = QJsonArray::fromStringList(mTags);
     QJsonObject project {
         { QStringLiteral("propertyTypes"), propertyTypes },
@@ -88,6 +89,7 @@ bool Project::save(const QString &fileName)
         { QStringLiteral("commands"), commands },
         { QStringLiteral("properties"),  projectProperties },
         { QStringLiteral("layerDefinitions"), layerDefinitions },
+        { QStringLiteral("tilesetRegistry"), tilesetRegistry },
         { QStringLiteral("tags"), tags },
     };
 
@@ -147,6 +149,9 @@ std::unique_ptr<Project> Project::load(const QString &fileName)
         context.setRecursiveBehavior(ExportContext::RecursiveBehavior::TypedListValues);
         project->mLayerDefinitions.loadFromJson(projectJson.value(QLatin1String("layerDefinitions")).toArray(), context);
     }
+
+    if (projectJson.contains(QLatin1String("tilesetRegistry")))
+        project->mTilesetRegistry.loadFromJson(projectJson.value(QLatin1String("tilesetRegistry")).toArray(), dir);
 
     for (const QJsonValue &value : projectJson.value(QLatin1String("tags")).toArray())
         project->mTags.append(value.toString());
